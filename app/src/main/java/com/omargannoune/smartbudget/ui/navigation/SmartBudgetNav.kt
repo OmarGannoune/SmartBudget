@@ -23,6 +23,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import coil.compose.AsyncImage
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.omargannoune.smartbudget.ui.budgets.BudgetsScreen
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
@@ -39,20 +41,26 @@ import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 private object Routes {
     const val Home = "home"
     const val Expenses = "expenses"
+    const val ExpensesWithAdd = "expenses?openAdd={openAdd}"
     const val Budgets = "budgets"
     const val Goals = "goals"
     const val Settings = "settings"
     const val Recurring = "recurring"
+    const val Add = "add"
+
+    fun expensesRoute(openAdd: Boolean): String = "expenses?openAdd=$openAdd"
 }
 
 private data class BottomItem(
     val route: String,
     val label: String,
-    val iconAssetPath: String
+    val iconAssetPath: String,
+    val isAdd: Boolean = false
 )
 
 private val bottomItems = listOf(
     BottomItem(Routes.Home, "Home", "file:///android_asset/icons/house.svg"),
+    BottomItem(Routes.Add, "Add", "", isAdd = true),
     BottomItem(Routes.Budgets, "Budgets", "file:///android_asset/icons/wallet.svg"),
     BottomItem(Routes.Goals, "Goals", "file:///android_asset/icons/target.svg"),
     BottomItem(Routes.Settings, "Settings", "file:///android_asset/icons/gear.svg")
@@ -76,15 +84,23 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 HomeScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
-                    onAddExpense = { navController.navigate(Routes.Expenses) }
+                    onAddExpense = { navController.navigate(Routes.expensesRoute(openAdd = true)) }
                 )
             }
-            composable(Routes.Expenses) {
+            composable(
+                route = Routes.ExpensesWithAdd,
+                arguments = listOf(navArgument("openAdd") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                })
+            ) {
+                val openAdd = it.arguments?.getBoolean("openAdd") ?: false
                 val viewModel: ExpensesViewModel = viewModel(factory = viewModelFactory)
                 val uiState by viewModel.expensesUiState.collectAsState()
                 ExpensesScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
+                    openAdd = openAdd,
                     onAddExpense = viewModel::createExpense,
                     onPreviousMonth = viewModel::goToPreviousMonth,
                     onNextMonth = viewModel::goToNextMonth
@@ -147,17 +163,27 @@ private fun BottomBar(navController: NavHostController) {
     NavigationBar {
         bottomItems.forEach { item ->
             NavigationBarItem(
-                selected = currentRoute == item.route,
+                selected = if (item.isAdd) false else currentRoute?.startsWith(item.route) == true,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (item.isAdd) {
+                        navController.navigate(Routes.expensesRoute(openAdd = true))
+                    } else {
+                        navController.navigate(item.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
-                icon = { NavIcon(iconPath = item.iconAssetPath, label = item.label) },
+                icon = {
+                    if (item.isAdd) {
+                        Text(text = "+")
+                    } else {
+                        NavIcon(iconPath = item.iconAssetPath, label = item.label)
+                    }
+                },
                 label = { Text(text = item.label) }
             )
         }

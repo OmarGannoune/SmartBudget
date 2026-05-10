@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import java.util.Locale
 fun ExpensesScreen(
     uiState: ExpensesViewModel.ExpensesUiState,
     modifier: Modifier = Modifier,
+    openAdd: Boolean = false,
     onAddExpense: (
         amountMinor: Long,
         date: String,
@@ -57,6 +59,14 @@ fun ExpensesScreen(
     onNextMonth: () -> Unit
 ) {
     var showAddExpense by remember { mutableStateOf(false) }
+    var shouldOpenAdd by remember(openAdd) { mutableStateOf(openAdd) }
+
+    LaunchedEffect(shouldOpenAdd) {
+        if (shouldOpenAdd) {
+            showAddExpense = true
+            shouldOpenAdd = false
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
