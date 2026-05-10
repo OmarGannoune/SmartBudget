@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 @Composable
 fun GoalsScreen(
@@ -100,12 +105,28 @@ private fun GoalsList(
 @Composable
 private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit) {
     val remaining = (goal.targetAmountMinor - goal.currentAmountMinor).coerceAtLeast(0)
+    val progress = if (goal.targetAmountMinor > 0L) {
+        (goal.currentAmountMinor.toFloat() / goal.targetAmountMinor).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val deadlineInfo = remember(goal.targetDate) { buildDeadlineInfo(goal.targetDate) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = goal.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(),
+                color = if (goal.isCompleted) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -127,15 +148,35 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
             Text(
                 text = "Remaining: ${formatAmount(remaining)}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (goal.isCompleted) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
-            if (goal.targetDate != null) {
+            if (goal.isCompleted) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Target date: ${goal.targetDate}",
+                    text = "Goal completed",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            if (deadlineInfo != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Target date: ${deadlineInfo.formattedDate}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (deadlineInfo.warning != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = deadlineInfo.warning,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(10.dp))
             Button(onClick = { onAddContribution(goal.id) }) {
@@ -321,4 +362,27 @@ private fun parseAmountToMinor(amountText: String): Long? {
         val decimal = BigDecimal(normalized)
         decimal.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
     }.getOrNull()
+}
+
+private data class DeadlineInfo(
+    val formattedDate: String,
+    val warning: String?
+)
+
+private fun buildDeadlineInfo(targetDate: String?): DeadlineInfo? {
+    if (targetDate.isNullOrBlank()) return null
+    val date = runCatching { LocalDate.parse(targetDate) }.getOrNull() ?: return null
+    val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+    val today = LocalDate.now()
+    val daysLeft = ChronoUnit.DAYS.between(today, date)
+    val warning = when {
+        daysLeft < 0 -> "Past target date"
+        daysLeft == 0L -> "Due today"
+        daysLeft in 1..7 -> "$daysLeft days left"
+        else -> null
+    }
+    return DeadlineInfo(
+        formattedDate = date.format(formatter),
+        warning = warning
+    )
 }
