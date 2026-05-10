@@ -24,6 +24,9 @@ interface ExpenseDao {
     )
     fun observeTotalForMonthCategory(monthPrefix: String, categoryId: Long): Flow<Long>
 
+    @Query("SELECT * FROM expenses ORDER BY date DESC, id DESC")
+    suspend fun getAllExpenses(): List<ExpenseEntity>
+
     @Insert
     suspend fun insert(expense: ExpenseEntity): Long
 

@@ -25,7 +25,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import android.content.Intent
+import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -35,10 +39,12 @@ fun SettingsScreen(
     onRenameCategory: (CategoryEntity, String) -> Unit,
     onArchiveCategory: (CategoryEntity) -> Unit,
     onDeleteCategory: (CategoryEntity) -> Unit,
-    onOpenRecurring: () -> Unit
+    onOpenRecurring: () -> Unit,
+    onExportCsv: (android.content.Context) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var renamingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
@@ -50,6 +56,45 @@ fun SettingsScreen(
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = { onExportCsv(context) }) {
+                Text(text = "Export CSV")
+            }
+            TextButton(
+                onClick = {
+                    val path = uiState.exportFilePath ?: return@TextButton
+                    val file = File(path)
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(sendIntent, "Share CSV")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(chooser)
+                },
+                enabled = uiState.exportFilePath != null
+            ) {
+                Text(text = "Share CSV")
+            }
+        }
+        uiState.exportMessage?.let { message ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Categories",

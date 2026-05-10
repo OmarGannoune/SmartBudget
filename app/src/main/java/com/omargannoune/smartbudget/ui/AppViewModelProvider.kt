@@ -35,7 +35,8 @@ object AppViewModelProvider {
                     }
                     modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
                         SettingsViewModel(
-                            categoryRepository = app.container.categoryRepository
+                            categoryRepository = app.container.categoryRepository,
+                            expenseRepository = app.container.expenseRepository
                         ) as T
                     }
                     modelClass.isAssignableFrom(RecurringViewModel::class.java) -> {

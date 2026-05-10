@@ -21,6 +21,11 @@ class RoomExpenseRepository(
     override fun observeTotalForMonthCategory(monthPrefix: String, categoryId: Long): Flow<Long> =
         expenseDao.observeTotalForMonthCategory(monthPrefix, categoryId)
 
+    override suspend fun getAllExpenses(): List<ExpenseEntity> =
+        withContext(Dispatchers.IO) {
+            expenseDao.getAllExpenses()
+        }
+
     override suspend fun createExpense(expense: ExpenseEntity) {
         withContext(Dispatchers.IO) {
             val now = timeProvider.nowMillis()

@@ -108,7 +108,8 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     onRenameCategory = viewModel::renameCategory,
                     onArchiveCategory = viewModel::archiveCategory,
                     onDeleteCategory = viewModel::deleteCategory,
-                    onOpenRecurring = { navController.navigate(Routes.Recurring) }
+                    onOpenRecurring = { navController.navigate(Routes.Recurring) },
+                    onExportCsv = viewModel::exportCsv
                 )
             }
             composable(Routes.Recurring) {
