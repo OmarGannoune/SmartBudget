@@ -1,4 +1,4 @@
-package com.omargannoune.smartbudget.ui.budgets
+package com.omargannoune.smartbudget.ui.goals
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,23 +25,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
-import com.omargannoune.smartbudget.data.local.entity.CategoryMonthlyBudgetEntity
+import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Composable
-fun BudgetsScreen(
-    uiState: BudgetsViewModel.BudgetsUiState,
+fun GoalsScreen(
+    uiState: GoalsViewModel.GoalsUiState,
     modifier: Modifier = Modifier,
-    onSaveMonthlyBudget: (limitMinor: Long, existingId: Long?) -> Unit,
-    onSaveCategoryBudget: (categoryId: Long, limitMinor: Long, existingId: Long?) -> Unit
+    onAddGoal: (name: String, targetMinor: Long, targetDate: String?) -> Unit,
+    onAddContribution: (goalId: Long, amountMinor: Long, note: String?) -> Unit
 ) {
-    var showMonthlyDialog by remember { mutableStateOf(false) }
-    var editingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
-    val categoryBudgetMap = remember(uiState.categoryBudgets) {
-        uiState.categoryBudgets.associateBy { it.categoryId }
-    }
+    var showAddGoal by remember { mutableStateOf(false) }
+    var selectedGoalId by remember { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = modifier
@@ -49,158 +45,120 @@ fun BudgetsScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Text(
-            text = "Budgets",
+            text = "Savings goals",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = uiState.month.ifBlank { "This month" },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Button(onClick = { showAddGoal = true }) {
+            Text(text = "Add goal")
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        MonthlyBudgetCard(
-            limitMinor = uiState.monthlyBudget?.totalLimitMinor,
-            onEdit = { showMonthlyDialog = true }
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Category limits",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        if (uiState.categories.isEmpty()) {
-            EmptyCategoryBudgets()
+        if (uiState.goals.isEmpty()) {
+            EmptyGoalsState()
         } else {
-            CategoryBudgetList(
-                categories = uiState.categories,
-                budgets = categoryBudgetMap,
-                onEdit = { editingCategory = it }
+            GoalsList(
+                goals = uiState.goals,
+                onAddContribution = { selectedGoalId = it }
             )
         }
     }
 
-    if (showMonthlyDialog) {
-        MonthlyBudgetDialog(
-            existingLimitMinor = uiState.monthlyBudget?.totalLimitMinor,
-            onDismiss = { showMonthlyDialog = false },
-            onSave = { limitMinor ->
-                onSaveMonthlyBudget(limitMinor, uiState.monthlyBudget?.id)
-                showMonthlyDialog = false
+    if (showAddGoal) {
+        AddGoalDialog(
+            onDismiss = { showAddGoal = false },
+            onSave = { name, amountMinor, targetDate ->
+                onAddGoal(name, amountMinor, targetDate)
+                showAddGoal = false
             }
         )
     }
 
-    editingCategory?.let { category ->
-        val existingBudget = categoryBudgetMap[category.id]
-        CategoryBudgetDialog(
-            category = category,
-            existingLimitMinor = existingBudget?.limitMinor,
-            onDismiss = { editingCategory = null },
-            onSave = { limitMinor ->
-                onSaveCategoryBudget(category.id, limitMinor, existingBudget?.id)
-                editingCategory = null
+    selectedGoalId?.let { goalId ->
+        AddContributionDialog(
+            onDismiss = { selectedGoalId = null },
+            onSave = { amountMinor, note ->
+                onAddContribution(goalId, amountMinor, note)
+                selectedGoalId = null
             }
         )
     }
 }
 
 @Composable
-private fun MonthlyBudgetCard(limitMinor: Long?, onEdit: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Total budget",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                TextButton(onClick = onEdit) {
-                    Text(text = "Edit")
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = limitMinor?.let { formatAmount(it) } ?: "No budget set",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryBudgetList(
-    categories: List<CategoryEntity>,
-    budgets: Map<Long, CategoryMonthlyBudgetEntity>,
-    onEdit: (CategoryEntity) -> Unit
+private fun GoalsList(
+    goals: List<SavingsGoalEntity>,
+    onAddContribution: (Long) -> Unit
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(categories, key = { it.id }) { category ->
-            val budget = budgets[category.id]
-            CategoryBudgetRow(
-                name = category.name,
-                limitMinor = budget?.limitMinor,
-                onEdit = { onEdit(category) }
-            )
+        items(goals, key = { it.id }) { goal ->
+            GoalCard(goal = goal, onAddContribution = onAddContribution)
         }
     }
 }
 
 @Composable
-private fun CategoryBudgetRow(
-    name: String,
-    limitMinor: Long?,
-    onEdit: () -> Unit
-) {
+private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit) {
+    val remaining = (goal.targetAmountMinor - goal.currentAmountMinor).coerceAtLeast(0)
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = goal.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Saved: ${formatAmount(goal.currentAmountMinor)}",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Text(
+                    text = "Target: ${formatAmount(goal.targetAmountMinor)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Remaining: ${formatAmount(remaining)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (goal.targetDate != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = limitMinor?.let { formatAmount(it) } ?: "No limit",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Target date: ${goal.targetDate}",
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            TextButton(onClick = onEdit) {
-                Text(text = "Set")
+            Spacer(modifier = Modifier.height(10.dp))
+            Button(onClick = { onAddContribution(goal.id) }) {
+                Text(text = "Add contribution")
             }
         }
     }
 }
 
 @Composable
-private fun EmptyCategoryBudgets() {
+private fun EmptyGoalsState() {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "No category limits",
+            text = "Set your first goal",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Set category budgets to track limits.",
+            text = "Choose a goal and track your progress.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -208,25 +166,39 @@ private fun EmptyCategoryBudgets() {
 }
 
 @Composable
-private fun MonthlyBudgetDialog(
-    existingLimitMinor: Long?,
+private fun AddGoalDialog(
     onDismiss: () -> Unit,
-    onSave: (Long) -> Unit
+    onSave: (name: String, targetMinor: Long, targetDate: String?) -> Unit
 ) {
-    var amountText by remember {
-        mutableStateOf(existingLimitMinor?.let { formatAmount(it).removeSuffix(" MAD") } ?: "")
-    }
+    var nameText by remember { mutableStateOf("") }
+    var amountText by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf("") }
+    var nameError by remember { mutableStateOf<String?>(null) }
     var amountError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Set monthly budget") },
+        title = { Text(text = "Create goal") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    label = { Text("Goal name") },
+                    isError = nameError != null,
+                    singleLine = true
+                )
+                if (nameError != null) {
+                    Text(
+                        text = nameError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+                OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Total budget") },
+                    label = { Text("Target amount") },
                     isError = amountError != null,
                     singleLine = true
                 )
@@ -237,21 +209,36 @@ private fun MonthlyBudgetDialog(
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
+                OutlinedTextField(
+                    value = dateText,
+                    onValueChange = { dateText = it },
+                    label = { Text("Target date (optional)") },
+                    singleLine = true
+                )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
+                    nameError = null
                     amountError = null
                     val amountMinor = parseAmountToMinor(amountText)
+                    if (nameText.isBlank()) {
+                        nameError = "Enter a goal name"
+                    }
                     if (amountMinor == null || amountMinor <= 0) {
                         amountError = "Enter a valid amount"
-                    } else {
-                        onSave(amountMinor)
+                    }
+                    if (nameError == null && amountError == null) {
+                        onSave(
+                            name = nameText.trim(),
+                            targetMinor = amountMinor ?: 0L,
+                            targetDate = dateText.trim().ifBlank { null }
+                        )
                     }
                 }
             ) {
-                Text("Save")
+                Text("Save goal")
             }
         },
         dismissButton = {
@@ -263,26 +250,23 @@ private fun MonthlyBudgetDialog(
 }
 
 @Composable
-private fun CategoryBudgetDialog(
-    category: CategoryEntity,
-    existingLimitMinor: Long?,
+private fun AddContributionDialog(
     onDismiss: () -> Unit,
-    onSave: (Long) -> Unit
+    onSave: (amountMinor: Long, note: String?) -> Unit
 ) {
-    var amountText by remember {
-        mutableStateOf(existingLimitMinor?.let { formatAmount(it).removeSuffix(" MAD") } ?: "")
-    }
+    var amountText by remember { mutableStateOf("") }
+    var noteText by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Set ${category.name} limit") },
+        title = { Text(text = "Add contribution") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Category limit") },
+                    label = { Text("Amount") },
                     isError = amountError != null,
                     singleLine = true
                 )
@@ -293,6 +277,11 @@ private fun CategoryBudgetDialog(
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    label = { Text("Note (optional)") }
+                )
             }
         },
         confirmButton = {
@@ -302,12 +291,13 @@ private fun CategoryBudgetDialog(
                     val amountMinor = parseAmountToMinor(amountText)
                     if (amountMinor == null || amountMinor <= 0) {
                         amountError = "Enter a valid amount"
-                    } else {
-                        onSave(amountMinor)
+                    }
+                    if (amountError == null) {
+                        onSave(amountMinor ?: 0L, noteText.trim().ifBlank { null })
                     }
                 }
             ) {
-                Text("Save")
+                Text("Add")
             }
         },
         dismissButton = {

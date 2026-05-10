@@ -23,6 +23,8 @@ import com.omargannoune.smartbudget.ui.budgets.BudgetsScreen
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
+import com.omargannoune.smartbudget.ui.goals.GoalsScreen
+import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
 import com.omargannoune.smartbudget.ui.screens.PlaceholderScreen
 import com.phosphoricons.phosphor.PhosphorIcons
 import com.phosphoricons.phosphor.regular.Gear
@@ -78,13 +80,19 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 val uiState by viewModel.budgetsUiState.collectAsState()
                 BudgetsScreen(
                     uiState = uiState,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
+                    onSaveMonthlyBudget = viewModel::setMonthlyBudget,
+                    onSaveCategoryBudget = viewModel::setCategoryBudget
                 )
             }
             composable(Routes.Goals) {
-                PlaceholderScreen(
-                    title = "Savings goals",
-                    modifier = Modifier.padding(innerPadding)
+                val viewModel: GoalsViewModel = viewModel(factory = viewModelFactory)
+                val uiState by viewModel.goalsUiState.collectAsState()
+                GoalsScreen(
+                    uiState = uiState,
+                    modifier = Modifier.padding(innerPadding),
+                    onAddGoal = viewModel::createGoal,
+                    onAddContribution = viewModel::addContribution
                 )
             }
             composable(Routes.Settings) {
