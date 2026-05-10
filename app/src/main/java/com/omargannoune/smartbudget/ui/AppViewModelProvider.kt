@@ -23,7 +23,8 @@ object AppViewModelProvider {
                     modelClass.isAssignableFrom(BudgetsViewModel::class.java) -> {
                         BudgetsViewModel(
                             budgetRepository = app.container.budgetRepository,
-                            categoryRepository = app.container.categoryRepository
+                            categoryRepository = app.container.categoryRepository,
+                            expenseRepository = app.container.expenseRepository
                         ) as T
                     }
                     modelClass.isAssignableFrom(GoalsViewModel::class.java) -> {

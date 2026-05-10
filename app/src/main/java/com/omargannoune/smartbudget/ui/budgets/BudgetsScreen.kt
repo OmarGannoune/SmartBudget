@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -26,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
-import com.omargannoune.smartbudget.data.local.entity.CategoryMonthlyBudgetEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.YearMonth
@@ -65,6 +65,8 @@ fun BudgetsScreen(
         Spacer(modifier = Modifier.height(16.dp))
         MonthlyBudgetCard(
             limitMinor = uiState.monthlyBudget?.totalLimitMinor,
+            spentMinor = uiState.totalSpentMinor,
+            remainingMinor = uiState.totalRemainingMinor,
             onEdit = { showMonthlyDialog = true }
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -78,8 +80,7 @@ fun BudgetsScreen(
             EmptyCategoryBudgets()
         } else {
             CategoryBudgetList(
-                categories = uiState.categories,
-                budgets = categoryBudgetMap,
+                statuses = uiState.categoryStatuses,
                 onEdit = { editingCategory = it }
             )
         }
@@ -111,7 +112,12 @@ fun BudgetsScreen(
 }
 
 @Composable
-private fun MonthlyBudgetCard(limitMinor: Long?, onEdit: () -> Unit) {
+private fun MonthlyBudgetCard(
+    limitMinor: Long?,
+    spentMinor: Long,
+    remainingMinor: Long?,
+    onEdit: () -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -134,23 +140,51 @@ private fun MonthlyBudgetCard(limitMinor: Long?, onEdit: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            if (limitMinor != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { (spentMinor.toFloat() / limitMinor).coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if ((remainingMinor ?: 0L) < 0L) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Spent: ${formatAmount(spentMinor)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if ((remainingMinor ?: 0L) < 0L) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun CategoryBudgetList(
-    categories: List<CategoryEntity>,
-    budgets: Map<Long, CategoryMonthlyBudgetEntity>,
+    statuses: List<BudgetsViewModel.CategoryBudgetStatus>,
     onEdit: (CategoryEntity) -> Unit
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(categories, key = { it.id }) { category ->
-            val budget = budgets[category.id]
+        items(statuses, key = { it.category.id }) { status ->
             CategoryBudgetRow(
-                name = category.name,
-                limitMinor = budget?.limitMinor,
-                onEdit = { onEdit(category) }
+                name = status.category.name,
+                limitMinor = status.limitMinor,
+                spentMinor = status.spentMinor,
+                remainingMinor = status.remainingMinor,
+                isOverspent = status.isOverspent,
+                onEdit = { onEdit(status.category) }
             )
         }
     }
@@ -160,6 +194,9 @@ private fun CategoryBudgetList(
 private fun CategoryBudgetRow(
     name: String,
     limitMinor: Long?,
+    spentMinor: Long,
+    remainingMinor: Long?,
+    isOverspent: Boolean,
     onEdit: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -177,11 +214,45 @@ private fun CategoryBudgetRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = limitMinor?.let { formatAmount(it) } ?: "No limit",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (limitMinor == null) {
+                    Text(
+                        text = "No limit",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    val progressValue = (spentMinor.toFloat() / limitMinor).coerceIn(0f, 1f)
+                    Text(
+                        text = "Limit: ${formatAmount(limitMinor)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { progressValue },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = if (isOverspent) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Spent: ${formatAmount(spentMinor)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isOverspent) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
             TextButton(onClick = onEdit) {
                 Text(text = "Set")
