@@ -1,268 +1,215 @@
 package com.omargannoune.smartbudget.ui.settings
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.FileProvider
-import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
-import android.content.Intent
-import java.io.File
-import com.omargannoune.smartbudget.ui.components.AppTextButton
-import com.omargannoune.smartbudget.ui.components.PrimaryButton
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
-import com.omargannoune.smartbudget.ui.components.SectionTitle
 
 @Composable
 fun SettingsScreen(
     uiState: SettingsViewModel.SettingsUiState,
     modifier: Modifier = Modifier,
-    onCreateCategory: (String) -> Unit,
-    onRenameCategory: (CategoryEntity, String) -> Unit,
-    onArchiveCategory: (CategoryEntity) -> Unit,
-    onDeleteCategory: (CategoryEntity) -> Unit,
-    onOpenRecurring: () -> Unit,
-    onExportCsv: (android.content.Context) -> Unit
+    onClearData: () -> Unit,
+    onExportCsv: (android.content.Context) -> Unit,
+    // Keep existing if needed for category management sub-flow
+    onOpenRecurring: () -> Unit = {}
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
-    var renamingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
     val context = LocalContext.current
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp)
     ) {
+        Spacer(modifier = Modifier.height(24.dp))
         ScreenTitle(text = "Settings")
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PrimaryButton(text = "Export CSV", onClick = { onExportCsv(context) })
-            AppTextButton(
-                onClick = {
-                    val path = uiState.exportFilePath ?: return@AppTextButton
-                    val file = File(path)
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file
+        Spacer(modifier = Modifier.height(32.dp))
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            item {
+                SettingsSection(title = "CATEGORIES") {
+                    SettingsItem(
+                        icon = Lucide.Tag,
+                        title = "Manage categories",
+                        onClick = { /* Navigate or open dialog */ }
                     )
-                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    val chooser = Intent.createChooser(sendIntent, "Share CSV")
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(chooser)
-                },
-                enabled = uiState.exportFilePath != null,
-                text = "Share CSV"
-            )
-        }
-        uiState.exportMessage?.let { message ->
-            Spacer(modifier = Modifier.height(12.dp))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        SectionTitle(text = "Categories")
-        Spacer(modifier = Modifier.height(12.dp))
-        AppTextButton(text = "Recurring bills", onClick = onOpenRecurring)
-        Spacer(modifier = Modifier.height(12.dp))
-        PrimaryButton(text = "Add category", onClick = { showAddDialog = true })
-        Spacer(modifier = Modifier.height(16.dp))
-        if (uiState.categories.isEmpty()) {
-            EmptyCategoriesState()
-        } else {
-            CategoryList(
-                categories = uiState.categories,
-                onRename = { renamingCategory = it },
-                onArchive = onArchiveCategory,
-                onDelete = onDeleteCategory
-            )
-        }
-    }
-
-    if (showAddDialog) {
-        CategoryDialog(
-            title = "Add category",
-            initialValue = "",
-            onDismiss = { showAddDialog = false },
-            onSave = {
-                onCreateCategory(it)
-                showAddDialog = false
-            }
-        )
-    }
-
-    renamingCategory?.let { category ->
-        CategoryDialog(
-            title = "Rename category",
-            initialValue = category.name,
-            onDismiss = { renamingCategory = null },
-            onSave = { newName ->
-                onRenameCategory(category, newName)
-                renamingCategory = null
-            }
-        )
-    }
-}
-
-@Composable
-private fun CategoryList(
-    categories: List<CategoryEntity>,
-    onRename: (CategoryEntity) -> Unit,
-    onArchive: (CategoryEntity) -> Unit,
-    onDelete: (CategoryEntity) -> Unit
-) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(categories, key = { it.id }) { category ->
-            CategoryRow(
-                category = category,
-                onRename = onRename,
-                onArchive = onArchive,
-                onDelete = onDelete
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryRow(
-    category: CategoryEntity,
-    onRename: (CategoryEntity) -> Unit,
-    onArchive: (CategoryEntity) -> Unit,
-    onDelete: (CategoryEntity) -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = category.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (category.isActive) "Active" else "Archived",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { onRename(category) }) {
-                    Text(text = "Rename")
-                }
-                TextButton(onClick = { onArchive(category) }) {
-                    Text(text = if (category.isActive) "Archive" else "Unarchive")
-                }
-                TextButton(onClick = { onDelete(category) }) {
-                    Text(text = "Delete")
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun CategoryDialog(
-    title: String,
-    initialValue: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit
-) {
-    var nameText by remember { mutableStateOf(initialValue) }
-    var errorText by remember { mutableStateOf<String?>(null) }
+            item {
+                SettingsSection(title = "CURRENCY") {
+                    SettingsItem(
+                        icon = Lucide.DollarSign,
+                        title = "Change currency",
+                        value = uiState.currency,
+                        onClick = { /* Change currency logic */ }
+                    )
+                }
+            }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = nameText,
-                    onValueChange = { nameText = it },
-                    label = { Text("Category name") },
-                    isError = errorText != null,
-                    singleLine = true
-                )
-                if (errorText != null) {
+            item {
+                SettingsSection(title = "EXPORT") {
+                    SettingsItem(
+                        icon = Lucide.Download,
+                        title = "Export CSV",
+                        onClick = { onExportCsv(context) }
+                    )
+                }
+            }
+
+            item {
+                SettingsSection(title = "ABOUT") {
+                    SettingsItem(
+                        icon = Lucide.Info,
+                        title = "App info",
+                        value = "1.0.0",
+                        onClick = { }
+                    )
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    elevation = null
+                ) {
+                    Icon(
+                        imageVector = Lucide.Trash2,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = errorText ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                        text = "Clear all data",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
                     )
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (nameText.isBlank()) {
-                        errorText = "Enter a category name"
-                    } else {
-                        onSave(nameText.trim())
-                    }
-                }
-            ) {
-                Text(text = "Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-    )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Clear all data?") },
+            text = { Text("This will delete all your expenses, budgets and goals. You will be taken back to onboarding.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearData()
+                        showDeleteConfirm = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Clear Everything")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun EmptyCategoriesState() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun SettingsSection(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        content()
+    }
+}
+
+@Composable
+private fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    value: String? = null,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Text(
-            text = "No categories yet",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Add a category to get started.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+            Icon(
+                imageVector = Lucide.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }

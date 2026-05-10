@@ -5,16 +5,11 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDateTime
@@ -22,18 +17,21 @@ import java.time.format.DateTimeFormatter
 
 class SettingsViewModel(
     private val categoryRepository: CategoryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
     private val exportMessage = MutableStateFlow<String?>(null)
     private val exportFilePath = MutableStateFlow<String?>(null)
 
     val settingsUiState: StateFlow<SettingsUiState> = combine(
         categoryRepository.observeAllCategories(),
+        onboardingRepository.observeProfile(),
         exportMessage,
         exportFilePath
-    ) { categories, message, filePath ->
+    ) { categories, profile, message, filePath ->
         SettingsUiState(
             categories = categories,
+            currency = profile.currency,
             exportMessage = message,
             exportFilePath = filePath
         )
@@ -41,9 +39,16 @@ class SettingsViewModel(
 
     data class SettingsUiState(
         val categories: List<CategoryEntity> = emptyList(),
+        val currency: String = "MAD",
         val exportMessage: String? = null,
         val exportFilePath: String? = null
     )
+
+    fun clearAllData() {
+        viewModelScope.launch {
+            onboardingRepository.setOnboardingComplete(false)
+        }
+    }
 
     fun createCategory(name: String) {
         viewModelScope.launch {
@@ -82,10 +87,10 @@ class SettingsViewModel(
                     .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                 val file = File(directory, "smartbudget_export_${timestamp}.csv")
                 file.writeText(csv)
-                exportMessage.value = "CSV saved to ${file.absolutePath}"
+                exportMessage.value = "CSV saved"
                 exportFilePath.value = file.absolutePath
-            }.onFailure { error ->
-                exportMessage.value = "Export failed: ${error.message ?: "Unknown error"}"
+            }.onFailure {
+                exportMessage.value = "Export failed"
                 exportFilePath.value = null
             }
         }
@@ -96,23 +101,15 @@ class SettingsViewModel(
         categoryLookup: Map<Long, CategoryEntity>
     ): String {
         val builder = StringBuilder()
-        builder.append(
-            "date,amount,currency,category,note,payment_method,necessity,is_recurring,recurring_source_id\n"
-        )
+        builder.append("date,amount,currency,category,note,payment_method,necessity,is_recurring,recurring_source_id\n")
         expenses.forEach { expense ->
             val categoryName = categoryLookup[expense.categoryId]?.name ?: "Unknown"
             val amount = formatAmount(expense.amountMinor)
             builder.append(
                 listOf(
-                    expense.date,
-                    amount,
-                    expense.currency,
-                    categoryName,
-                    expense.note,
-                    expense.paymentMethod,
-                    expense.necessityRating?.toString(),
-                    if (expense.isRecurringInstance) "1" else "0",
-                    expense.recurringSourceId?.toString()
+                    expense.date, amount, expense.currency, categoryName,
+                    expense.note, expense.paymentMethod, expense.necessityRating?.toString(),
+                    if (expense.isRecurringInstance) "1" else "0", expense.recurringSourceId?.toString()
                 ).joinToString(separator = ",") { escapeCsv(it) }
             )
             builder.append("\n")

@@ -122,11 +122,7 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 SettingsScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
-                    onCreateCategory = viewModel::createCategory,
-                    onRenameCategory = viewModel::renameCategory,
-                    onArchiveCategory = viewModel::archiveCategory,
-                    onDeleteCategory = viewModel::deleteCategory,
-                    onOpenRecurring = { navController.navigate(Routes.Recurring) },
+                    onClearData = viewModel::clearAllData,
                     onExportCsv = viewModel::exportCsv
                 )
             }
