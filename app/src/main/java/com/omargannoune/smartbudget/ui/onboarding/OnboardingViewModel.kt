@@ -31,11 +31,13 @@ class OnboardingViewModel(
 
     val uiState: StateFlow<OnboardingUiState> = combine(
         categoryRepository.observeAllCategories(),
+        savingsRepository.observeGoals(),
         name,
         currency
-    ) { categories, userName, currencyCode ->
+    ) { categories: List<CategoryEntity>, goals: List<SavingsGoalEntity>, userName: String, currencyCode: String ->
         OnboardingUiState(
             categories = categories,
+            goals = goals,
             name = userName,
             currency = currencyCode
         )
@@ -43,6 +45,7 @@ class OnboardingViewModel(
 
     data class OnboardingUiState(
         val categories: List<CategoryEntity> = emptyList(),
+        val goals: List<SavingsGoalEntity> = emptyList(),
         val name: String = "",
         val currency: String = "MAD"
     )
@@ -78,8 +81,8 @@ class OnboardingViewModel(
                     currentAmountMinor = 0L,
                     targetDate = targetDate,
                     isCompleted = false,
-                    createdAt = 0L,
-                    updatedAt = 0L
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
                 )
             )
         }
@@ -98,8 +101,8 @@ class OnboardingViewModel(
                 MonthlyBudgetEntity(
                     month = month,
                     totalLimitMinor = limitMinor,
-                    createdAt = 0L,
-                    updatedAt = 0L
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
                 )
             )
         }

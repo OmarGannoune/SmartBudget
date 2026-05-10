@@ -2,49 +2,41 @@ package com.omargannoune.smartbudget.ui.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.AppTextButton
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 private object OnboardingRoutes {
     const val Welcome = "welcome"
@@ -93,6 +85,7 @@ fun OnboardingNav(
         }
         composable(OnboardingRoutes.Goals) {
             GoalsSetupScreen(
+                goals = uiState.goals,
                 onAddGoal = viewModel::createGoal,
                 onContinue = { navController.navigate(OnboardingRoutes.Categories) },
                 onSkip = { navController.navigate(OnboardingRoutes.Categories) }
@@ -222,6 +215,7 @@ private fun OnboardingScreenContainer(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileScreen(
     name: String,
@@ -231,6 +225,9 @@ private fun ProfileScreen(
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val currencies = listOf("MAD", "USD", "EUR", "GBP", "JPY")
+
     OnboardingScreenContainer(
         title = "Make it yours",
         subtitle = "Set a name and currency. You can change this later.",
@@ -246,19 +243,42 @@ private fun ProfileScreen(
                 label = "Your name",
                 placeholder = "John Doe"
             )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                OnboardingTextField(
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
                     value = currency,
-                    onValueChange = onCurrencyChange,
-                    label = "Currency",
-                    placeholder = "MAD"
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Currency") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
-                Text(
-                    text = "Default is MAD",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    currencies.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                onCurrencyChange(selectionOption)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -266,72 +286,172 @@ private fun ProfileScreen(
 
 @Composable
 private fun GoalsSetupScreen(
+    goals: List<SavingsGoalEntity>,
     onAddGoal: (name: String, targetMinor: Long, targetDate: String?) -> Unit,
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
-    var goalName by remember { mutableStateOf("") }
-    var targetAmount by remember { mutableStateOf("") }
-    var targetDate by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var amountError by remember { mutableStateOf<String?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
     OnboardingScreenContainer(
-        title = "Create your first goal",
-        subtitle = "Small goals add up fast.",
+        title = "Create your goals",
+        subtitle = "Small goals add up fast. Add as many as you want.",
         onPrimaryClick = onContinue,
         primaryText = "Continue",
         onSecondaryClick = onSkip,
         secondaryText = "Skip",
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            OnboardingTextField(
-                value = goalName,
-                onValueChange = { goalName = it },
-                label = "Goal name",
-                placeholder = "New Car",
-                isError = nameError != null,
-                errorMessage = nameError
-            )
-            OnboardingTextField(
-                value = targetAmount,
-                onValueChange = { targetAmount = it },
-                label = "Target amount",
-                placeholder = "0.00",
-                isError = amountError != null,
-                errorMessage = amountError
-            )
-            OnboardingTextField(
-                value = targetDate,
-                onValueChange = { targetDate = it },
-                label = "Target date (optional)",
-                placeholder = "YYYY-MM-DD"
-            )
-            PrimaryButton(
-                text = "Add goal",
+            Button(
+                onClick = { showAddDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Icon(Lucide.Plus, null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Add a new goal", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+            }
+
+            if (goals.isNotEmpty()) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.heightIn(max = 240.dp)
+                ) {
+                    items(goals) { goal ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(goal.name, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    text = formatAmount(goal.targetAmountMinor),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddGoalDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, amount, date ->
+                onAddGoal(name, amount, date)
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddGoalDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, Long, String?) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedDate by remember { mutableStateOf<Long?>(null) }
+    val datePickerState = rememberDatePickerState()
+
+    val formattedDate = selectedDate?.let {
+        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New Goal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OnboardingTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = "Goal Name",
+                    placeholder = "e.g. Dream Vacation"
+                )
+                OnboardingTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = "Target Amount",
+                    placeholder = "0.00"
+                )
+                
+                OutlinedTextField(
+                    value = formattedDate ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Target Date (Optional)") },
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Lucide.Calendar, null, modifier = Modifier.size(20.dp))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
                 onClick = {
-                    nameError = null
-                    amountError = null
-                    val amountMinor = parseAmountToMinor(targetAmount)
-                    if (goalName.isBlank()) {
-                        nameError = "Enter a goal name"
-                    }
-                    if (amountMinor == null || amountMinor <= 0L) {
-                        amountError = "Enter a valid amount"
-                    }
-                    if (nameError == null && amountError == null) {
-                        onAddGoal(
-                            goalName.trim(),
-                            amountMinor ?: 0L,
-                            targetDate.trim().ifBlank { null }
-                        )
-                        goalName = ""
-                        targetAmount = ""
-                        targetDate = ""
+                    val amountMinor = parseAmountToMinor(amount)
+                    if (name.isNotBlank() && amountMinor != null) {
+                        onConfirm(name, amountMinor, formattedDate)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
-            )
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary)
+            ) {
+                Text("Add Goal", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedDate = datePickerState.selectedDateMillis
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }
@@ -534,4 +654,10 @@ private fun parseAmountToMinor(amountText: String): Long? {
         val decimal = BigDecimal(normalized)
         decimal.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
     }.getOrNull()
+}
+
+private fun formatAmount(amountMinor: Long): String {
+    val major = amountMinor / 100
+    val minor = kotlin.math.abs(amountMinor % 100)
+    return "$major.${minor.toString().padStart(2, '0')}"
 }
