@@ -6,6 +6,7 @@ import com.omargannoune.smartbudget.SmartBudgetApp
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
+import com.omargannoune.smartbudget.ui.onboarding.OnboardingViewModel
 import com.omargannoune.smartbudget.ui.recurring.RecurringViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
@@ -43,6 +44,14 @@ object AppViewModelProvider {
                         RecurringViewModel(
                             recurringRepository = app.container.recurringRepository,
                             categoryRepository = app.container.categoryRepository
+                        ) as T
+                    }
+                    modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> {
+                        OnboardingViewModel(
+                            onboardingRepository = app.container.onboardingRepository,
+                            categoryRepository = app.container.categoryRepository,
+                            savingsRepository = app.container.savingsRepository,
+                            budgetRepository = app.container.budgetRepository
                         ) as T
                     }
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

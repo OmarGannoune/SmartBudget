@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.omargannoune.smartbudget.ui.theme.SmartBudgetTheme
 import com.omargannoune.smartbudget.ui.AppViewModelProvider
-import com.omargannoune.smartbudget.ui.navigation.SmartBudgetNav
+import com.omargannoune.smartbudget.ui.navigation.SmartBudgetRootNav
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +16,10 @@ class MainActivity : ComponentActivity() {
             SmartBudgetTheme {
                 val app = application as SmartBudgetApp
                 val viewModelFactory = AppViewModelProvider.factory(app)
-                SmartBudgetNav(viewModelFactory = viewModelFactory)
+                SmartBudgetRootNav(
+                    viewModelFactory = viewModelFactory,
+                    onboardingRepository = app.container.onboardingRepository
+                )
             }
         }
     }

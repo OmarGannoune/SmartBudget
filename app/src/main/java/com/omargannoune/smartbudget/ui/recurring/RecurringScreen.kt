@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.RecurringRuleEntity
+import com.omargannoune.smartbudget.ui.components.AppTextButton
+import com.omargannoune.smartbudget.ui.components.PrimaryButton
+import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -62,23 +64,15 @@ fun RecurringScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Recurring bills",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            TextButton(onClick = onBack) {
-                Text(text = "Back")
-            }
+            ScreenTitle(text = "Recurring bills")
+            AppTextButton(text = "Back", onClick = onBack)
         }
         Spacer(modifier = Modifier.height(12.dp))
         uiState.generatedCount?.let { count ->
             GenerationBanner(count = count)
             Spacer(modifier = Modifier.height(12.dp))
         }
-        Button(onClick = { showAddDialog = true }) {
-            Text(text = "Add bill")
-        }
+        PrimaryButton(text = "Add bill", onClick = { showAddDialog = true })
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.rules.isEmpty()) {
             EmptyRecurringState()
@@ -180,12 +174,11 @@ private fun RecurringRow(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { onToggleActive(rule) }) {
-                    Text(text = if (rule.isActive) "Pause" else "Resume")
-                }
-                TextButton(onClick = { onDeleteRule(rule.id) }) {
-                    Text(text = "Delete")
-                }
+                AppTextButton(
+                    text = if (rule.isActive) "Pause" else "Resume",
+                    onClick = { onToggleActive(rule) }
+                )
+                AppTextButton(text = "Delete", onClick = { onDeleteRule(rule.id) })
             }
         }
     }

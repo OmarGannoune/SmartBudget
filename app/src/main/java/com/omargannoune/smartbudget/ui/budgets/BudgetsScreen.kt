@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.SectionTitle
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.YearMonth
@@ -51,17 +52,9 @@ fun BudgetsScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Budgets",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        ScreenTitle(text = "Budgets")
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = formatMonthLabel(uiState.month),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        SectionTitle(text = formatMonthLabel(uiState.month))
         Spacer(modifier = Modifier.height(16.dp))
         MonthlyBudgetCard(
             limitMinor = uiState.monthlyBudget?.totalLimitMinor,
@@ -70,11 +63,7 @@ fun BudgetsScreen(
             onEdit = { showMonthlyDialog = true }
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Category limits",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        SectionTitle(text = "Category limits")
         Spacer(modifier = Modifier.height(12.dp))
         if (uiState.categories.isEmpty()) {
             EmptyCategoryBudgets()

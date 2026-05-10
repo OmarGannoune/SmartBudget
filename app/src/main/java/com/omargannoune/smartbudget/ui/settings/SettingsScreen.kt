@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +29,10 @@ import androidx.core.content.FileProvider
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import android.content.Intent
 import java.io.File
+import com.omargannoune.smartbudget.ui.components.AppTextButton
+import com.omargannoune.smartbudget.ui.components.PrimaryButton
+import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.SectionTitle
 
 @Composable
 fun SettingsScreen(
@@ -51,19 +54,13 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        ScreenTitle(text = "Settings")
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onExportCsv(context) }) {
-                Text(text = "Export CSV")
-            }
-            TextButton(
+            PrimaryButton(text = "Export CSV", onClick = { onExportCsv(context) })
+            AppTextButton(
                 onClick = {
-                    val path = uiState.exportFilePath ?: return@TextButton
+                    val path = uiState.exportFilePath ?: return@AppTextButton
                     val file = File(path)
                     val uri = FileProvider.getUriForFile(
                         context,
@@ -79,10 +76,9 @@ fun SettingsScreen(
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(chooser)
                 },
-                enabled = uiState.exportFilePath != null
-            ) {
-                Text(text = "Share CSV")
-            }
+                enabled = uiState.exportFilePath != null,
+                text = "Share CSV"
+            )
         }
         uiState.exportMessage?.let { message ->
             Spacer(modifier = Modifier.height(12.dp))
@@ -96,19 +92,11 @@ fun SettingsScreen(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Categories",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        SectionTitle(text = "Categories")
         Spacer(modifier = Modifier.height(12.dp))
-        TextButton(onClick = onOpenRecurring) {
-            Text(text = "Recurring bills")
-        }
+        AppTextButton(text = "Recurring bills", onClick = onOpenRecurring)
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { showAddDialog = true }) {
-            Text(text = "Add category")
-        }
+        PrimaryButton(text = "Add category", onClick = { showAddDialog = true })
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.categories.isEmpty()) {
             EmptyCategoriesState()

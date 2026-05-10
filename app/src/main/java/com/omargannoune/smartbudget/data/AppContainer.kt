@@ -2,6 +2,7 @@ package com.omargannoune.smartbudget.data
 
 import android.content.Context
 import com.omargannoune.smartbudget.data.local.DatabaseProvider
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.BudgetRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
@@ -44,4 +45,6 @@ class AppContainer(context: Context) {
         expenseDao = database.expenseDao(),
         timeProvider = timeProvider
     )
+
+    val onboardingRepository: OnboardingRepository = OnboardingRepository(context)
 }

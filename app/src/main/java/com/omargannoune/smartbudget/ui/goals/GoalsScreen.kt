@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
+import com.omargannoune.smartbudget.ui.components.PrimaryButton
+import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.AppTextButton
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -49,15 +50,9 @@ fun GoalsScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Savings goals",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        ScreenTitle(text = "Savings goals")
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = { showAddGoal = true }) {
-            Text(text = "Add goal")
-        }
+        PrimaryButton(text = "Add goal", onClick = { showAddGoal = true })
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.goals.isEmpty()) {
             EmptyGoalsState()
@@ -179,9 +174,7 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Button(onClick = { onAddContribution(goal.id) }) {
-                Text(text = "Add contribution")
-            }
+            PrimaryButton(text = "Add contribution", onClick = { onAddContribution(goal.id) })
         }
     }
 }
@@ -259,7 +252,8 @@ private fun AddGoalDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            AppTextButton(
+                text = "Save goal",
                 onClick = {
                     nameError = null
                     amountError = null
@@ -278,14 +272,10 @@ private fun AddGoalDialog(
                         )
                     }
                 }
-            ) {
-                Text("Save goal")
-            }
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            AppTextButton(text = "Cancel", onClick = onDismiss)
         }
     )
 }
@@ -326,7 +316,8 @@ private fun AddContributionDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            AppTextButton(
+                text = "Save",
                 onClick = {
                     amountError = null
                     val amountMinor = parseAmountToMinor(amountText)
@@ -337,14 +328,10 @@ private fun AddContributionDialog(
                         onSave(amountMinor ?: 0L, noteText.trim().ifBlank { null })
                     }
                 }
-            ) {
-                Text("Add")
-            }
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            AppTextButton(text = "Cancel", onClick = onDismiss)
         }
     )
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -33,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
+import com.omargannoune.smartbudget.ui.components.PrimaryButton
+import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -61,11 +62,7 @@ fun ExpensesScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Expenses",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        ScreenTitle(text = "Expenses")
         Spacer(modifier = Modifier.height(12.dp))
         MonthHeader(
             month = uiState.month,
@@ -75,9 +72,7 @@ fun ExpensesScreen(
         Spacer(modifier = Modifier.height(16.dp))
         TotalCard(totalMinor = uiState.totalMinor)
         Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = { showAddExpense = true }) {
-            Text(text = "Add expense")
-        }
+        PrimaryButton(text = "Add expense", onClick = { showAddExpense = true })
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.expenses.isEmpty()) {
             EmptyExpensesState()
