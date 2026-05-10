@@ -1,8 +1,7 @@
 package com.omargannoune.smartbudget.ui.onboarding
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,20 +10,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,19 +28,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.omargannoune.smartbudget.R
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.ui.components.AppTextButton
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
@@ -71,7 +64,11 @@ fun OnboardingNav(
     val viewModel: OnboardingViewModel = viewModel(factory = viewModelFactory)
     val uiState by viewModel.uiState.collectAsState()
 
-    NavHost(navController = navController, startDestination = OnboardingRoutes.Welcome) {
+    NavHost(
+        navController = navController,
+        startDestination = OnboardingRoutes.Welcome,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+    ) {
         composable(OnboardingRoutes.Welcome) {
             WelcomeScreen(
                 onStart = { navController.navigate(OnboardingRoutes.Profile) },
@@ -129,11 +126,10 @@ fun OnboardingNav(
 
 @Composable
 private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0B0F14))) {
-        // Background image
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.onboarding_bg),
-            contentDescription = "Onboarding background gradient",
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
@@ -141,18 +137,19 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = 24.dp, vertical = 48.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
+                verticalArrangement = Arrangement.spacedBy(40.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Illustration image
                 Image(
                     painter = painterResource(id = R.drawable.onboarding_illustration),
-                    contentDescription = "Savings jar illustration",
-                    modifier = Modifier.fillMaxWidth().height(280.dp),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
                     contentScale = ContentScale.Fit
                 )
                 Column(
@@ -163,49 +160,64 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
                     Text(
                         text = "SMARTBUDGET",
                         style = MaterialTheme.typography.displayLarge,
-                        color = Color(0xFFF2F4F8), // Text Primary from spec
+                        color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "Plan your month.\nTrack every expense.\nReach your goals.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFFA9B1BF), // Text Secondary from spec
-                        textAlign = TextAlign.Center,
-                        lineHeight = 24.sp
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Primary button with Primary Accent color #5DE2C6
-                Button(
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                PrimaryButton(
+                    text = "Get started",
                     onClick = onStart,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF5DE2C6) // Primary Accent from spec
-                    )
-                ) {
-                    Text(
-                        text = "Get started",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF0B0F14) // Dark text on light button
-                    )
-                }
-                // Text button for "Skip for now"
-                TextButton(
+                    modifier = Modifier.fillMaxWidth()
+                )
+                AppTextButton(
+                    text = "Skip for now",
                     onClick = onSkip,
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) {
-                    Text(
-                        text = "Skip for now",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFFA9B1BF) // Text Secondary
-                    )
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingScreenContainer(
+    title: String,
+    subtitle: String,
+    onPrimaryClick: () -> Unit,
+    primaryText: String,
+    onSecondaryClick: () -> Unit,
+    secondaryText: String,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 48.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ScreenTitle(text = title)
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            content()
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            PrimaryButton(text = primaryText, onClick = onPrimaryClick, modifier = Modifier.fillMaxWidth())
+            AppTextButton(text = secondaryText, onClick = onSecondaryClick, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -219,41 +231,35 @@ private fun ProfileScreen(
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    OnboardingScreenContainer(
+        title = "Make it yours",
+        subtitle = "Set a name and currency. You can change this later.",
+        onPrimaryClick = onContinue,
+        primaryText = "Continue",
+        onSecondaryClick = onSkip,
+        secondaryText = "Skip",
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(text = "Make it yours")
-            Text(
-                text = "Set a name and currency. You can change this later.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OnboardingTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = { Text("Your name") },
-                singleLine = true
+                label = "Your name",
+                placeholder = "John Doe"
             )
-            OutlinedTextField(
-                value = currency,
-                onValueChange = onCurrencyChange,
-                label = { Text("Currency") },
-                singleLine = true
-            )
-            Text(
-                text = "Default is MAD",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryButton(text = "Continue", onClick = onContinue, modifier = Modifier.fillMaxWidth())
-            AppTextButton(text = "Skip", onClick = onSkip, modifier = Modifier.fillMaxWidth())
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OnboardingTextField(
+                    value = currency,
+                    onValueChange = onCurrencyChange,
+                    label = "Currency",
+                    placeholder = "MAD"
+                )
+                Text(
+                    text = "Default is MAD",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
         }
     }
 }
@@ -270,52 +276,36 @@ private fun GoalsSetupScreen(
     var nameError by remember { mutableStateOf<String?>(null) }
     var amountError by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    OnboardingScreenContainer(
+        title = "Create your first goal",
+        subtitle = "Small goals add up fast.",
+        onPrimaryClick = onContinue,
+        primaryText = "Continue",
+        onSecondaryClick = onSkip,
+        secondaryText = "Skip",
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(text = "Create your first goal")
-            Text(
-                text = "Small goals add up fast.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            OutlinedTextField(
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OnboardingTextField(
                 value = goalName,
                 onValueChange = { goalName = it },
-                label = { Text("Goal name") },
+                label = "Goal name",
+                placeholder = "New Car",
                 isError = nameError != null,
-                singleLine = true
+                errorMessage = nameError
             )
-            if (nameError != null) {
-                Text(
-                    text = nameError ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            OutlinedTextField(
+            OnboardingTextField(
                 value = targetAmount,
                 onValueChange = { targetAmount = it },
-                label = { Text("Target amount") },
+                label = "Target amount",
+                placeholder = "0.00",
                 isError = amountError != null,
-                singleLine = true
+                errorMessage = amountError
             )
-            if (amountError != null) {
-                Text(
-                    text = amountError ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            OutlinedTextField(
+            OnboardingTextField(
                 value = targetDate,
                 onValueChange = { targetDate = it },
-                label = { Text("Target date (optional)") },
-                singleLine = true
+                label = "Target date (optional)",
+                placeholder = "YYYY-MM-DD"
             )
             PrimaryButton(
                 text = "Add goal",
@@ -343,10 +333,6 @@ private fun GoalsSetupScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryButton(text = "Continue", onClick = onContinue, modifier = Modifier.fillMaxWidth())
-            AppTextButton(text = "Skip", onClick = onSkip, modifier = Modifier.fillMaxWidth())
-        }
     }
 }
 
@@ -360,70 +346,62 @@ private fun CategoriesSetupScreen(
     var categoryName by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    OnboardingScreenContainer(
+        title = "Pick your categories",
+        subtitle = "Keep it simple. You can add more anytime.",
+        onPrimaryClick = onContinue,
+        primaryText = "Continue",
+        onSecondaryClick = onSkip,
+        secondaryText = "Skip",
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(text = "Pick your categories")
-            Text(
-                text = "Keep it simple. You can add more anytime.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            OutlinedTextField(
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OnboardingTextField(
                 value = categoryName,
                 onValueChange = { categoryName = it },
-                label = { Text("Category name") },
+                label = "Category name",
+                placeholder = "Groceries",
                 isError = errorText != null,
-                singleLine = true
+                errorMessage = errorText
             )
-            if (errorText != null) {
-                Text(
-                    text = errorText ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PrimaryButton(
-                    text = "Add category",
-                    onClick = {
-                        errorText = null
-                        val trimmed = categoryName.trim()
-                        if (trimmed.isBlank()) {
-                            errorText = "Enter a category name"
-                        } else if (categories.any { it.name.equals(trimmed, ignoreCase = true) }) {
-                            errorText = "Category already exists"
-                        } else {
-                            onAddCategory(trimmed)
-                            categoryName = ""
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            PrimaryButton(
+                text = "Add category",
+                onClick = {
+                    errorText = null
+                    val trimmed = categoryName.trim()
+                    if (trimmed.isBlank()) {
+                        errorText = "Enter a category name"
+                    } else if (categories.any { it.name.equals(trimmed, ignoreCase = true) }) {
+                        errorText = "Category already exists"
+                    } else {
+                        onAddCategory(trimmed)
+                        categoryName = ""
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
             if (categories.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
                 CategoryPreviewList(categories = categories)
             }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryButton(text = "Continue", onClick = onContinue, modifier = Modifier.fillMaxWidth())
-            AppTextButton(text = "Skip", onClick = onSkip, modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
 @Composable
 private fun CategoryPreviewList(categories: List<CategoryEntity>) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.height(200.dp)
+    ) {
         items(categories, key = { it.id }) { category ->
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -446,33 +424,23 @@ private fun BudgetSetupScreen(
     var amountText by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+    OnboardingScreenContainer(
+        title = "Set your monthly budget",
+        subtitle = "Add a total limit and optional category limits.",
+        onPrimaryClick = onContinue,
+        primaryText = "Continue",
+        onSecondaryClick = onSkip,
+        secondaryText = "Skip",
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(text = "Set your monthly budget")
-            Text(
-                text = "Add a total limit and optional category limits.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            OutlinedTextField(
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OnboardingTextField(
                 value = amountText,
                 onValueChange = { amountText = it },
-                label = { Text("Total monthly budget") },
+                label = "Total monthly budget",
+                placeholder = "0.00",
                 isError = amountError != null,
-                singleLine = true
+                errorMessage = amountError
             )
-            if (amountError != null) {
-                Text(
-                    text = amountError ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
             PrimaryButton(
                 text = "Set budget",
                 onClick = {
@@ -487,10 +455,6 @@ private fun BudgetSetupScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryButton(text = "Continue", onClick = onContinue, modifier = Modifier.fillMaxWidth())
-            AppTextButton(text = "Skip", onClick = onSkip, modifier = Modifier.fillMaxWidth())
-        }
     }
 }
 
@@ -499,18 +463,67 @@ private fun DoneScreen(onFinish: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
+            .padding(horizontal = 24.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenTitle(text = "You are all set")
-            Text(
-                text = "Your budget is ready. Let us track your progress.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                ScreenTitle(text = "You are all set")
+                Text(
+                    text = "Your budget is ready. Let us track your progress.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Image(
+                painter = painterResource(id = R.drawable.onboarding_illustration),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp),
+                contentScale = ContentScale.Fit
             )
         }
         PrimaryButton(text = "Go to Home", onClick = onFinish, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun OnboardingTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    isError: Boolean = false,
+    errorMessage: String? = null
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(label) },
+            placeholder = { Text(placeholder) },
+            singleLine = true,
+            isError = isError,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                cursorColor = MaterialTheme.colorScheme.tertiary
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge
+        )
+        if (isError && errorMessage != null) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
     }
 }
 
