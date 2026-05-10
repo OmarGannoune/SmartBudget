@@ -29,12 +29,15 @@ import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsScreen
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
+import com.omargannoune.smartbudget.ui.home.HomeScreen
+import com.omargannoune.smartbudget.ui.home.HomeViewModel
 import com.omargannoune.smartbudget.ui.recurring.RecurringScreen
 import com.omargannoune.smartbudget.ui.recurring.RecurringViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsScreen
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
 private object Routes {
+    const val Home = "home"
     const val Expenses = "expenses"
     const val Budgets = "budgets"
     const val Goals = "goals"
@@ -49,7 +52,7 @@ private data class BottomItem(
 )
 
 private val bottomItems = listOf(
-    BottomItem(Routes.Expenses, "Expenses", "file:///android_asset/icons/house.svg"),
+    BottomItem(Routes.Home, "Home", "file:///android_asset/icons/house.svg"),
     BottomItem(Routes.Budgets, "Budgets", "file:///android_asset/icons/wallet.svg"),
     BottomItem(Routes.Goals, "Goals", "file:///android_asset/icons/target.svg"),
     BottomItem(Routes.Settings, "Settings", "file:///android_asset/icons/gear.svg")
@@ -64,9 +67,18 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Expenses,
+            startDestination = Routes.Home,
             modifier = Modifier.fillMaxSize()
         ) {
+            composable(Routes.Home) {
+                val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
+                val uiState by viewModel.uiState.collectAsState()
+                HomeScreen(
+                    uiState = uiState,
+                    modifier = Modifier.padding(innerPadding),
+                    onAddExpense = { navController.navigate(Routes.Expenses) }
+                )
+            }
             composable(Routes.Expenses) {
                 val viewModel: ExpensesViewModel = viewModel(factory = viewModelFactory)
                 val uiState by viewModel.expensesUiState.collectAsState()
