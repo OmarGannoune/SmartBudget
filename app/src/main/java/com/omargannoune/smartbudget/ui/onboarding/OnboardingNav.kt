@@ -141,7 +141,7 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(40.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
@@ -149,25 +149,25 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp),
+                        .height(450.dp),
                     contentScale = ContentScale.Fit
                 )
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
                         text = "SMARTBUDGET",
                         style = MaterialTheme.typography.displayLarge,
                         color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Left
                     )
                     Text(
                         text = "Plan your month.\nTrack every expense.\nReach your goals.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Left
                     )
                 }
             }

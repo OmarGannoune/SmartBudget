@@ -50,6 +50,12 @@ class SettingsViewModel(
         }
     }
 
+    fun updateCurrency(currency: String) {
+        viewModelScope.launch {
+            onboardingRepository.updateCurrency(currency)
+        }
+    }
+
     fun createCategory(name: String) {
         viewModelScope.launch {
             categoryRepository.createCategory(name = name, icon = null, color = null)
@@ -74,6 +80,11 @@ class SettingsViewModel(
         }
     }
 
+    fun clearExportMessage() {
+        exportMessage.value = null
+        exportFilePath.value = null
+    }
+
     fun exportCsv(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -87,7 +98,7 @@ class SettingsViewModel(
                     .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                 val file = File(directory, "smartbudget_export_${timestamp}.csv")
                 file.writeText(csv)
-                exportMessage.value = "CSV saved"
+                exportMessage.value = "CSV saved successfully"
                 exportFilePath.value = file.absolutePath
             }.onFailure {
                 exportMessage.value = "Export failed"

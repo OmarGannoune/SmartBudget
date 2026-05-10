@@ -123,7 +123,13 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
                     onClearData = viewModel::clearAllData,
-                    onExportCsv = viewModel::exportCsv
+                    onUpdateCurrency = viewModel::updateCurrency,
+                    onExportCsv = viewModel::exportCsv,
+                    onCreateCategory = viewModel::createCategory,
+                    onRenameCategory = viewModel::renameCategory,
+                    onArchiveCategory = viewModel::archiveCategory,
+                    onDeleteCategory = viewModel::deleteCategory,
+                    onClearExportMessage = viewModel::clearExportMessage
                 )
             }
             composable(Routes.Recurring) {

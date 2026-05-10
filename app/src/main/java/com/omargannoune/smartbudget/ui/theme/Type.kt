@@ -21,7 +21,7 @@ private val defaultTextStyle = TextStyle(
 )
 
 val Typography = Typography(
-    displayLarge = defaultTextStyle.copy(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Bold),
+    displayLarge = defaultTextStyle.copy(fontSize = 50.sp, lineHeight = 64.sp, fontWeight = FontWeight.Bold),
     displayMedium = defaultTextStyle.copy(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Bold),
     displaySmall = defaultTextStyle.copy(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.Bold),
     headlineLarge = defaultTextStyle.copy(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold),

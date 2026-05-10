@@ -43,6 +43,12 @@ class OnboardingRepository(private val context: Context) {
         }
     }
 
+    suspend fun updateCurrency(currency: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.currency] = currency
+        }
+    }
+
     suspend fun setOnboardingComplete(isComplete: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.onboardingComplete] = isComplete
