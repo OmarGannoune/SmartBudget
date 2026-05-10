@@ -12,6 +12,9 @@ interface RecurringRuleDao {
     @Query("SELECT * FROM recurring_rules WHERE isActive = 1 ORDER BY nextOccurrenceDate ASC")
     fun observeActiveRules(): Flow<List<RecurringRuleEntity>>
 
+    @Query("SELECT * FROM recurring_rules WHERE isActive = 1 ORDER BY nextOccurrenceDate ASC")
+    suspend fun getActiveRules(): List<RecurringRuleEntity>
+
     @Query("SELECT * FROM recurring_rules ORDER BY createdAt DESC")
     fun observeAllRules(): Flow<List<RecurringRuleEntity>>
 

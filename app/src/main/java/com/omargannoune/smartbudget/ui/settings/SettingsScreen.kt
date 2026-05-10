@@ -34,7 +34,8 @@ fun SettingsScreen(
     onCreateCategory: (String) -> Unit,
     onRenameCategory: (CategoryEntity, String) -> Unit,
     onArchiveCategory: (CategoryEntity) -> Unit,
-    onDeleteCategory: (CategoryEntity) -> Unit
+    onDeleteCategory: (CategoryEntity) -> Unit,
+    onOpenRecurring: () -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var renamingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
@@ -55,6 +56,10 @@ fun SettingsScreen(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
+        Spacer(modifier = Modifier.height(12.dp))
+        TextButton(onClick = onOpenRecurring) {
+            Text(text = "Recurring bills")
+        }
         Spacer(modifier = Modifier.height(12.dp))
         Button(onClick = { showAddDialog = true }) {
             Text(text = "Add category")

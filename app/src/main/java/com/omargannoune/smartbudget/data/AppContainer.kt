@@ -41,6 +41,7 @@ class AppContainer(context: Context) {
 
     val recurringRepository: RecurringRepository = RoomRecurringRepository(
         recurringRuleDao = database.recurringRuleDao(),
+        expenseDao = database.expenseDao(),
         timeProvider = timeProvider
     )
 }

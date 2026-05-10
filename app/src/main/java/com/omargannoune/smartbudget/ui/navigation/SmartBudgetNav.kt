@@ -29,6 +29,8 @@ import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsScreen
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
+import com.omargannoune.smartbudget.ui.recurring.RecurringScreen
+import com.omargannoune.smartbudget.ui.recurring.RecurringViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsScreen
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
@@ -37,6 +39,7 @@ private object Routes {
     const val Budgets = "budgets"
     const val Goals = "goals"
     const val Settings = "settings"
+    const val Recurring = "recurring"
 }
 
 private data class BottomItem(
@@ -104,7 +107,20 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     onCreateCategory = viewModel::createCategory,
                     onRenameCategory = viewModel::renameCategory,
                     onArchiveCategory = viewModel::archiveCategory,
-                    onDeleteCategory = viewModel::deleteCategory
+                    onDeleteCategory = viewModel::deleteCategory,
+                    onOpenRecurring = { navController.navigate(Routes.Recurring) }
+                )
+            }
+            composable(Routes.Recurring) {
+                val viewModel: RecurringViewModel = viewModel(factory = viewModelFactory)
+                val uiState by viewModel.uiState.collectAsState()
+                RecurringScreen(
+                    uiState = uiState,
+                    modifier = Modifier.padding(innerPadding),
+                    onBack = { navController.popBackStack() },
+                    onCreateRule = viewModel::createRule,
+                    onToggleActive = viewModel::toggleActive,
+                    onDeleteRule = viewModel::deleteRule
                 )
             }
         }

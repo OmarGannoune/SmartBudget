@@ -17,6 +17,7 @@ class SmartBudgetApp : Application() {
         container = AppContainer(this)
         appScope.launch {
             container.categoryRepository.ensureDefaultCategories()
+            container.recurringRepository.generateDueExpenses()
         }
     }
 }

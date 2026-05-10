@@ -174,7 +174,7 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
                     Text(
                         text = deadlineInfo.warning,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = deadlineWarningColor(deadlineInfo.severity)
                     )
                 }
             }
@@ -366,8 +366,16 @@ private fun parseAmountToMinor(amountText: String): Long? {
 
 private data class DeadlineInfo(
     val formattedDate: String,
-    val warning: String?
+    val warning: String?,
+    val severity: DeadlineSeverity
 )
+
+private enum class DeadlineSeverity {
+    None,
+    Soon,
+    DueToday,
+    Overdue
+}
 
 private fun buildDeadlineInfo(targetDate: String?): DeadlineInfo? {
     if (targetDate.isNullOrBlank()) return null
@@ -381,8 +389,23 @@ private fun buildDeadlineInfo(targetDate: String?): DeadlineInfo? {
         daysLeft in 1..7 -> "$daysLeft days left"
         else -> null
     }
+    val severity = when {
+        daysLeft < 0 -> DeadlineSeverity.Overdue
+        daysLeft == 0L -> DeadlineSeverity.DueToday
+        daysLeft in 1..7 -> DeadlineSeverity.Soon
+        else -> DeadlineSeverity.None
+    }
     return DeadlineInfo(
         formattedDate = date.format(formatter),
-        warning = warning
+        warning = warning,
+        severity = severity
     )
+}
+
+@Composable
+private fun deadlineWarningColor(severity: DeadlineSeverity) = when (severity) {
+    DeadlineSeverity.Overdue -> MaterialTheme.colorScheme.error
+    DeadlineSeverity.DueToday -> MaterialTheme.colorScheme.error
+    DeadlineSeverity.Soon -> MaterialTheme.colorScheme.secondary
+    DeadlineSeverity.None -> MaterialTheme.colorScheme.onSurfaceVariant
 }

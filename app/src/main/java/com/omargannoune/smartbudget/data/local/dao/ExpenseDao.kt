@@ -33,6 +33,11 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE id = :expenseId")
     suspend fun deleteById(expenseId: Long)
 
+    @Query(
+        "SELECT COUNT(*) FROM expenses WHERE recurringSourceId = :ruleId AND date = :date"
+    )
+    suspend fun countRecurringExpenseForDate(ruleId: Long, date: String): Int
+
     @Query("UPDATE expenses SET categoryId = :otherCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun moveExpensesToCategory(oldCategoryId: Long, otherCategoryId: Long)
 }

@@ -9,4 +9,5 @@ interface RecurringRepository {
     suspend fun createRule(rule: RecurringRuleEntity)
     suspend fun updateRule(rule: RecurringRuleEntity)
     suspend fun deleteRule(ruleId: Long)
+    suspend fun generateDueExpenses(): Int
 }

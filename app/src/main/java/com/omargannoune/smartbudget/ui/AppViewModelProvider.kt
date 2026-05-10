@@ -6,6 +6,7 @@ import com.omargannoune.smartbudget.SmartBudgetApp
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
+import com.omargannoune.smartbudget.ui.recurring.RecurringViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
 object AppViewModelProvider {
@@ -34,6 +35,12 @@ object AppViewModelProvider {
                     }
                     modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
                         SettingsViewModel(
+                            categoryRepository = app.container.categoryRepository
+                        ) as T
+                    }
+                    modelClass.isAssignableFrom(RecurringViewModel::class.java) -> {
+                        RecurringViewModel(
+                            recurringRepository = app.container.recurringRepository,
                             categoryRepository = app.container.categoryRepository
                         ) as T
                     }
