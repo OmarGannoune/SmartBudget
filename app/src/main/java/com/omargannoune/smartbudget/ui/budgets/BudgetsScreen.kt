@@ -29,6 +29,9 @@ import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.CategoryMonthlyBudgetEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun BudgetsScreen(
@@ -55,7 +58,7 @@ fun BudgetsScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = uiState.month.ifBlank { "This month" },
+            text = formatMonthLabel(uiState.month),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -331,4 +334,12 @@ private fun parseAmountToMinor(amountText: String): Long? {
         val decimal = BigDecimal(normalized)
         decimal.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact()
     }.getOrNull()
+}
+
+private fun formatMonthLabel(month: String): String {
+    if (month.isBlank()) return "This month"
+    return runCatching {
+        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+        YearMonth.parse(month).format(formatter)
+    }.getOrDefault(month)
 }

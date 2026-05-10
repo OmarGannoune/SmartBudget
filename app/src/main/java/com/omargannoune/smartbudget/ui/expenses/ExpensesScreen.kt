@@ -36,6 +36,9 @@ import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ExpensesScreen(
@@ -106,7 +109,7 @@ private fun MonthHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = month.ifBlank { "This month" },
+            text = formatMonthLabel(month),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -126,6 +129,14 @@ private fun MonthHeader(
             )
         }
     }
+}
+
+private fun formatMonthLabel(month: String): String {
+    if (month.isBlank()) return "This month"
+    return runCatching {
+        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+        YearMonth.parse(month).format(formatter)
+    }.getOrDefault(month)
 }
 
 @Composable
