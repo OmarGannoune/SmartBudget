@@ -14,11 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -336,35 +340,55 @@ private fun AddExpenseDialog(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun CategoryPicker(
     categories: List<CategoryEntity>,
     selectedId: Long?,
     onSelected: (Long) -> Unit,
     isError: Boolean
 ) {
-    Column {
-        Text(
-            text = "Category",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+    var expanded by remember { mutableStateOf(false) }
+    val selected = categories.firstOrNull { it.id == selectedId }
+    val labelColor = if (isError) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selected?.name ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Category", color = labelColor) },
+            isError = isError,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
         )
-        Spacer(modifier = Modifier.height(6.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(categories, key = { it.id }) { category ->
-                Button(
-                    onClick = { onSelected(category.id) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = category.name)
-                }
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.name) },
+                    onClick = {
+                        onSelected(category.id)
+                        expanded = false
+                    }
+                )
             }
-        }
-        if (categories.isEmpty()) {
-            Text(
-                text = "Add a category first",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (categories.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("Add a category first") },
+                    onClick = { expanded = false }
+                )
+            }
         }
     }
 }
