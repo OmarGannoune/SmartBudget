@@ -19,17 +19,17 @@ private val spaceGrotesk = FontFamily(
     Font(
         googleFont = GoogleFont("Space Grotesk"),
         fontProvider = spaceGroteskProvider,
-        fontWeight = FontWeight.Normal
+        weight = FontWeight.Normal
     ),
     Font(
         googleFont = GoogleFont("Space Grotesk"),
         fontProvider = spaceGroteskProvider,
-        fontWeight = FontWeight.Medium
+        weight = FontWeight.Medium
     ),
     Font(
         googleFont = GoogleFont("Space Grotesk"),
         fontProvider = spaceGroteskProvider,
-        fontWeight = FontWeight.SemiBold
+        weight = FontWeight.SemiBold
     )
 )
 

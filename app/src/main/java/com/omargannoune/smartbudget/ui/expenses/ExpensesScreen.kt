@@ -329,12 +329,12 @@ private fun AddExpenseDialog(
                     if (amountError == null && dateError == null && categoryError == null) {
                         val necessity = necessityText.toIntOrNull()?.coerceIn(1, 10)
                         onSave(
-                            amountMinor = amountMinor ?: 0L,
-                            date = dateText,
-                            categoryId = selectedCategoryId ?: 0L,
-                            note = noteText.ifBlank { null },
-                            paymentMethod = paymentMethodText.ifBlank { null },
-                            necessityRating = necessity
+                            amountMinor ?: 0L,
+                            dateText,
+                            selectedCategoryId ?: 0L,
+                            noteText.ifBlank { null },
+                            paymentMethodText.ifBlank { null },
+                            necessity
                         )
                     }
                 }

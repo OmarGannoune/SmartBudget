@@ -231,9 +231,9 @@ private fun AddGoalDialog(
                     }
                     if (nameError == null && amountError == null) {
                         onSave(
-                            name = nameText.trim(),
-                            targetMinor = amountMinor ?: 0L,
-                            targetDate = dateText.trim().ifBlank { null }
+                            nameText.trim(),
+                            amountMinor ?: 0L,
+                            dateText.trim().ifBlank { null }
                         )
                     }
                 }

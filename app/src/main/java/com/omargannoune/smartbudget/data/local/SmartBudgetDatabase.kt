@@ -17,13 +17,13 @@ import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 
 @Database(
     entities = [
-        CategoryEntity,
-        ExpenseEntity,
-        MonthlyBudgetEntity,
-        CategoryMonthlyBudgetEntity,
-        SavingsGoalEntity,
-        SavingsContributionEntity,
-        RecurringRuleEntity
+        CategoryEntity::class,
+        ExpenseEntity::class,
+        MonthlyBudgetEntity::class,
+        CategoryMonthlyBudgetEntity::class,
+        SavingsGoalEntity::class,
+        SavingsContributionEntity::class,
+        RecurringRuleEntity::class
     ],
     version = 1,
     exportSchema = true

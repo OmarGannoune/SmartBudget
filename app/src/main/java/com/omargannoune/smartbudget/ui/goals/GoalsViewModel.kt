@@ -7,6 +7,7 @@ import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.data.repository.SavingsRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -15,6 +16,7 @@ class GoalsViewModel(
     private val savingsRepository: SavingsRepository
 ) : ViewModel() {
     val goalsUiState: StateFlow<GoalsUiState> = savingsRepository.observeGoals()
+        .map { goals -> GoalsUiState(goals = goals) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GoalsUiState())
 
     data class GoalsUiState(
