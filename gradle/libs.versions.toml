@@ -13,6 +13,7 @@ ksp = "2.0.21-1.0.27"
 desugar = "2.0.4"
 coroutines = "1.8.1"
 navigationCompose = "2.8.0"
+phosphor = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 android-desugar = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+phosphor-icons-compose = { group = "com.github.phosphor-icons", name = "phosphor-compose", version.ref = "phosphor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

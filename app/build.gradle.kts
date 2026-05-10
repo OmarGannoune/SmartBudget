@@ -62,6 +62,7 @@ dependencies {
     coreLibraryDesugaring(libs.android.desugar)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.phosphor.icons.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

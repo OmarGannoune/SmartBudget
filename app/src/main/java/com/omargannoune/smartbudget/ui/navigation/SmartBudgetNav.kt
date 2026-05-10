@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.Icon
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,6 +24,11 @@ import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.screens.PlaceholderScreen
+import com.phosphoricons.phosphor.PhosphorIcons
+import com.phosphoricons.phosphor.regular.Gear
+import com.phosphoricons.phosphor.regular.House
+import com.phosphoricons.phosphor.regular.Target
+import com.phosphoricons.phosphor.regular.Wallet
 
 private object Routes {
     const val Expenses = "expenses"
@@ -33,14 +39,15 @@ private object Routes {
 
 private data class BottomItem(
     val route: String,
-    val label: String
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
 private val bottomItems = listOf(
-    BottomItem(Routes.Expenses, "Expenses"),
-    BottomItem(Routes.Budgets, "Budgets"),
-    BottomItem(Routes.Goals, "Goals"),
-    BottomItem(Routes.Settings, "Settings")
+    BottomItem(Routes.Expenses, "Expenses", PhosphorIcons.Regular.House),
+    BottomItem(Routes.Budgets, "Budgets", PhosphorIcons.Regular.Wallet),
+    BottomItem(Routes.Goals, "Goals", PhosphorIcons.Regular.Target),
+    BottomItem(Routes.Settings, "Settings", PhosphorIcons.Regular.Gear)
 )
 
 @Composable
@@ -107,7 +114,7 @@ private fun BottomBar(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                icon = { Text(text = item.label.take(1)) },
+                icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
                 label = { Text(text = item.label) }
             )
         }
