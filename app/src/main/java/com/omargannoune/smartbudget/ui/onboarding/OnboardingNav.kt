@@ -1,19 +1,30 @@
 package com.omargannoune.smartbudget.ui.onboarding
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,7 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.omargannoune.smartbudget.R
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -111,27 +129,83 @@ fun OnboardingNav(
 
 @Composable
 private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "SmartBudget",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Plan your month. Track every expense. Reach your goals.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryButton(text = "Get started", onClick = onStart, modifier = Modifier.fillMaxWidth())
-            AppTextButton(text = "Skip for now", onClick = onSkip, modifier = Modifier.fillMaxWidth())
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0B0F14))) {
+        // Background image
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_bg),
+            contentDescription = "Onboarding background gradient",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(32.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Illustration image
+                Image(
+                    painter = painterResource(id = R.drawable.onboarding_illustration),
+                    contentDescription = "Savings jar illustration",
+                    modifier = Modifier.fillMaxWidth().height(280.dp),
+                    contentScale = ContentScale.Fit
+                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "SMARTBUDGET",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = Color(0xFFF2F4F8), // Text Primary from spec
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Plan your month.\nTrack every expense.\nReach your goals.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFFA9B1BF), // Text Secondary from spec
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Primary button with Primary Accent color #5DE2C6
+                Button(
+                    onClick = onStart,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5DE2C6) // Primary Accent from spec
+                    )
+                ) {
+                    Text(
+                        text = "Get started",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF0B0F14) // Dark text on light button
+                    )
+                }
+                // Text button for "Skip for now"
+                TextButton(
+                    onClick = onSkip,
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text(
+                        text = "Skip for now",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFFA9B1BF) // Text Secondary
+                    )
+                }
+            }
         }
     }
 }
