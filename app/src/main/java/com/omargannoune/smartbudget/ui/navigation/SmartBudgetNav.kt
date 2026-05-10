@@ -1,30 +1,29 @@
 package com.omargannoune.smartbudget.ui.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.collectAsState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
-import coil.compose.AsyncImage
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.ui.budgets.BudgetsScreen
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
@@ -40,30 +39,20 @@ import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
 private object Routes {
     const val Home = "home"
-    const val Expenses = "expenses"
     const val ExpensesWithAdd = "expenses?openAdd={openAdd}"
     const val Budgets = "budgets"
     const val Goals = "goals"
     const val Settings = "settings"
     const val Recurring = "recurring"
-    const val Add = "add"
 
     fun expensesRoute(openAdd: Boolean): String = "expenses?openAdd=$openAdd"
 }
 
-private data class BottomItem(
+private data class BottomNavItem(
     val route: String,
+    val icon: ImageVector,
     val label: String,
-    val iconAssetPath: String,
     val isAdd: Boolean = false
-)
-
-private val bottomItems = listOf(
-    BottomItem(Routes.Home, "Home", "file:///android_asset/icons/house.svg"),
-    BottomItem(Routes.Add, "Add", "", isAdd = true),
-    BottomItem(Routes.Budgets, "Budgets", "file:///android_asset/icons/wallet.svg"),
-    BottomItem(Routes.Goals, "Goals", "file:///android_asset/icons/target.svg"),
-    BottomItem(Routes.Settings, "Settings", "file:///android_asset/icons/gear.svg")
 )
 
 @Composable
@@ -71,7 +60,8 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
     val navController = rememberNavController()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        bottomBar = { BottomBar(navController = navController) }
+        bottomBar = { CustomBottomBar(navController = navController) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -157,46 +147,81 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController) {
+private fun CustomBottomBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    NavigationBar {
-        bottomItems.forEach { item ->
-            NavigationBarItem(
-                selected = if (item.isAdd) false else currentRoute?.startsWith(item.route) == true,
-                onClick = {
-                    if (item.isAdd) {
-                        navController.navigate(Routes.expensesRoute(openAdd = true))
-                    } else {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+
+    val items = listOf(
+        BottomNavItem(Routes.Home, Lucide.House, "Home"),
+        BottomNavItem(Routes.Budgets, Lucide.Wallet, "Budgets"),
+        BottomNavItem("add", Lucide.Plus, "Add", isAdd = true),
+        BottomNavItem(Routes.Goals, Lucide.Target, "Goals"),
+        BottomNavItem(Routes.Settings, Lucide.Settings, "Settings")
+    )
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .fillMaxWidth()
+                .height(80.dp)
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                if (item.isAdd) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp, 52.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.tertiary)
+                            .clickable {
+                                navController.navigate(Routes.expensesRoute(openAdd = true))
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-                },
-                icon = {
-                    if (item.isAdd) {
-                        Text(text = "+")
-                    } else {
-                        NavIcon(iconPath = item.iconAssetPath, label = item.label)
+                } else {
+                    val isSelected = currentRoute == item.route
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                },
-                label = { Text(text = item.label) }
-            )
+                }
+            }
         }
     }
-}
-
-@Composable
-private fun NavIcon(iconPath: String, label: String) {
-    AsyncImage(
-        model = iconPath,
-        contentDescription = label,
-        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
-        modifier = Modifier
-            .size(24.dp)
-    )
 }

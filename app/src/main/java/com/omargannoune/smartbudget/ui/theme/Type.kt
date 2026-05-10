@@ -2,72 +2,38 @@ package com.omargannoune.smartbudget.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.omargannoune.smartbudget.R
 
-private val spaceGroteskProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
+// Using local font files ensures they work offline and on all devices
+private val spaceGrotesk = FontFamily(
+    Font(R.font.space_grotesk_regular, FontWeight.Normal),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold)
 )
 
-private val spaceGrotesk = FontFamily(
-    Font(
-        googleFont = GoogleFont("Space Grotesk"),
-        fontProvider = spaceGroteskProvider,
-        weight = FontWeight.Normal
-    ),
-    Font(
-        googleFont = GoogleFont("Space Grotesk"),
-        fontProvider = spaceGroteskProvider,
-        weight = FontWeight.Medium
-    ),
-    Font(
-        googleFont = GoogleFont("Space Grotesk"),
-        fontProvider = spaceGroteskProvider,
-        weight = FontWeight.SemiBold
-    )
+private val defaultTextStyle = TextStyle(
+    fontFamily = spaceGrotesk,
+    fontWeight = FontWeight.Normal,
+    color = TextPrimary
 )
 
 val Typography = Typography(
-    displayLarge = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 32.sp,
-        lineHeight = 36.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 28.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.Medium,
-        fontSize = 20.sp,
-        lineHeight = 24.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 22.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
-        lineHeight = 21.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = spaceGrotesk,
-        fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
-        lineHeight = 16.sp
-    )
+    displayLarge = defaultTextStyle.copy(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Bold),
+    displayMedium = defaultTextStyle.copy(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Bold),
+    displaySmall = defaultTextStyle.copy(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.Bold),
+    headlineLarge = defaultTextStyle.copy(fontSize = 32.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold),
+    headlineMedium = defaultTextStyle.copy(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold),
+    headlineSmall = defaultTextStyle.copy(fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold),
+    titleLarge = defaultTextStyle.copy(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+    titleMedium = defaultTextStyle.copy(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold),
+    titleSmall = defaultTextStyle.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
+    bodyLarge = defaultTextStyle.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = defaultTextStyle.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    bodySmall = defaultTextStyle.copy(fontSize = 12.sp, lineHeight = 16.sp),
+    labelLarge = defaultTextStyle.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
+    labelMedium = defaultTextStyle.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+    labelSmall = defaultTextStyle.copy(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
 )
