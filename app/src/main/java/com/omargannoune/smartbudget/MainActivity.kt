@@ -31,7 +31,9 @@ class MainActivity : ComponentActivity() {
                     ExpensesScreen(
                         uiState = uiState,
                         modifier = Modifier.padding(innerPadding),
-                        onAddExpense = expensesViewModel::createExpense
+                        onAddExpense = expensesViewModel::createExpense,
+                        onPreviousMonth = expensesViewModel::goToPreviousMonth,
+                        onNextMonth = expensesViewModel::goToNextMonth
                     )
                 }
             }

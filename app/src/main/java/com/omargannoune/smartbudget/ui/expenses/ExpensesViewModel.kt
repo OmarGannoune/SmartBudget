@@ -10,9 +10,13 @@ import com.omargannoune.smartbudget.data.repository.ExpenseRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 class ExpensesViewModel(
@@ -21,20 +25,24 @@ class ExpensesViewModel(
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
 
-    private val currentMonth = LocalDate.now().format(monthFormatter)
+    private val currentMonth = MutableStateFlow(LocalDate.now().format(monthFormatter))
 
-    val expensesUiState: StateFlow<ExpensesUiState> = combine(
-        expenseRepository.observeExpensesForMonth(currentMonth),
-        expenseRepository.observeTotalForMonth(currentMonth),
-        categoryRepository.observeActiveCategories()
-    ) { expenses, total, categories ->
-        ExpensesUiState(
-            month = currentMonth,
-            totalMinor = total,
-            expenses = expenses,
-            categories = categories
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpensesUiState())
+    val expensesUiState: StateFlow<ExpensesUiState> = currentMonth
+        .flatMapLatest { month ->
+            combine(
+                expenseRepository.observeExpensesForMonth(month),
+                expenseRepository.observeTotalForMonth(month),
+                categoryRepository.observeActiveCategories()
+            ) { expenses, total, categories ->
+                ExpensesUiState(
+                    month = month,
+                    totalMinor = total,
+                    expenses = expenses,
+                    categories = categories
+                )
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpensesUiState())
 
     data class ExpensesUiState(
         val month: String = "",
@@ -67,6 +75,18 @@ class ExpensesViewModel(
                     updatedAt = 0L
                 )
             )
+        }
+    }
+
+    fun goToPreviousMonth() {
+        currentMonth.update { month ->
+            YearMonth.parse(month).minusMonths(1).format(monthFormatter)
+        }
+    }
+
+    fun goToNextMonth() {
+        currentMonth.update { month ->
+            YearMonth.parse(month).plusMonths(1).format(monthFormatter)
         }
     }
 }

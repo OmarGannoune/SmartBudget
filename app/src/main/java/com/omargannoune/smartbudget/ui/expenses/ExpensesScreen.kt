@@ -18,12 +18,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,7 +44,9 @@ fun ExpensesScreen(
         note: String?,
         paymentMethod: String?,
         necessityRating: Int?
-    ) -> Unit
+    ) -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
 ) {
     var showAddExpense by remember { mutableStateOf(false) }
     Column(
@@ -58,7 +60,11 @@ fun ExpensesScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
-        MonthHeader(month = uiState.month)
+        MonthHeader(
+            month = uiState.month,
+            onPreviousMonth = onPreviousMonth,
+            onNextMonth = onNextMonth
+        )
         Spacer(modifier = Modifier.height(16.dp))
         TotalCard(totalMinor = uiState.totalMinor)
         Spacer(modifier = Modifier.height(20.dp))
@@ -86,7 +92,11 @@ fun ExpensesScreen(
 }
 
 @Composable
-private fun MonthHeader(month: String) {
+private fun MonthHeader(
+    month: String,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -97,11 +107,20 @@ private fun MonthHeader(month: String) {
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "\u25C0  \u25B6",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        IconButton(onClick = onPreviousMonth) {
+            Text(
+                text = "\u25C0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onNextMonth) {
+            Text(
+                text = "\u25B6",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
