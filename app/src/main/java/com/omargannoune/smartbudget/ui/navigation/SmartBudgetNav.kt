@@ -31,7 +31,6 @@ import com.omargannoune.smartbudget.ui.goals.GoalsScreen
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsScreen
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
-import com.omargannoune.smartbudget.R
 
 private object Routes {
     const val Expenses = "expenses"
@@ -43,14 +42,14 @@ private object Routes {
 private data class BottomItem(
     val route: String,
     val label: String,
-    val iconRes: Int
+    val iconAssetPath: String
 )
 
 private val bottomItems = listOf(
-    BottomItem(Routes.Expenses, "Expenses", R.drawable.house),
-    BottomItem(Routes.Budgets, "Budgets", R.drawable.wallet),
-    BottomItem(Routes.Goals, "Goals", R.drawable.target),
-    BottomItem(Routes.Settings, "Settings", R.drawable.gear)
+    BottomItem(Routes.Expenses, "Expenses", "file:///android_asset/icons/house.svg"),
+    BottomItem(Routes.Budgets, "Budgets", "file:///android_asset/icons/wallet.svg"),
+    BottomItem(Routes.Goals, "Goals", "file:///android_asset/icons/target.svg"),
+    BottomItem(Routes.Settings, "Settings", "file:///android_asset/icons/gear.svg")
 )
 
 @Composable
@@ -129,7 +128,7 @@ private fun BottomBar(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                icon = { NavIcon(iconRes = item.iconRes, label = item.label) },
+                icon = { NavIcon(iconPath = item.iconAssetPath, label = item.label) },
                 label = { Text(text = item.label) }
             )
         }
@@ -137,9 +136,9 @@ private fun BottomBar(navController: NavHostController) {
 }
 
 @Composable
-private fun NavIcon(iconRes: Int, label: String) {
+private fun NavIcon(iconPath: String, label: String) {
     AsyncImage(
-        model = iconRes,
+        model = iconPath,
         contentDescription = label,
         colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
         modifier = Modifier
