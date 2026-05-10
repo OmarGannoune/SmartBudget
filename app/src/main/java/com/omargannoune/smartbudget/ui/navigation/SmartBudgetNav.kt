@@ -9,9 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material3.Icon
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -19,6 +19,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import coil.compose.AsyncImage
 import com.omargannoune.smartbudget.ui.budgets.BudgetsScreen
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
@@ -27,11 +31,7 @@ import com.omargannoune.smartbudget.ui.goals.GoalsScreen
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
 import com.omargannoune.smartbudget.ui.settings.SettingsScreen
 import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
-import com.phosphoricons.phosphor.PhosphorIcons
-import com.phosphoricons.phosphor.regular.Gear
-import com.phosphoricons.phosphor.regular.House
-import com.phosphoricons.phosphor.regular.Target
-import com.phosphoricons.phosphor.regular.Wallet
+import com.omargannoune.smartbudget.R
 
 private object Routes {
     const val Expenses = "expenses"
@@ -43,14 +43,14 @@ private object Routes {
 private data class BottomItem(
     val route: String,
     val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val iconRes: Int
 )
 
 private val bottomItems = listOf(
-    BottomItem(Routes.Expenses, "Expenses", PhosphorIcons.Regular.House),
-    BottomItem(Routes.Budgets, "Budgets", PhosphorIcons.Regular.Wallet),
-    BottomItem(Routes.Goals, "Goals", PhosphorIcons.Regular.Target),
-    BottomItem(Routes.Settings, "Settings", PhosphorIcons.Regular.Gear)
+    BottomItem(Routes.Expenses, "Expenses", R.drawable.house),
+    BottomItem(Routes.Budgets, "Budgets", R.drawable.wallet),
+    BottomItem(Routes.Goals, "Goals", R.drawable.target),
+    BottomItem(Routes.Settings, "Settings", R.drawable.gear)
 )
 
 @Composable
@@ -129,9 +129,20 @@ private fun BottomBar(navController: NavHostController) {
                         restoreState = true
                     }
                 },
-                icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
+                icon = { NavIcon(iconRes = item.iconRes, label = item.label) },
                 label = { Text(text = item.label) }
             )
         }
     }
+}
+
+@Composable
+private fun NavIcon(iconRes: Int, label: String) {
+    AsyncImage(
+        model = iconRes,
+        contentDescription = label,
+        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+        modifier = Modifier
+            .size(24.dp)
+    )
 }
