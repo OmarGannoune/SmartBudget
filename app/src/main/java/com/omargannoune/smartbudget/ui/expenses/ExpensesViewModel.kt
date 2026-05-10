@@ -7,6 +7,7 @@ import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -15,11 +16,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class ExpensesViewModel(
-    expenseRepository: ExpenseRepository,
+    private val expenseRepository: ExpenseRepository,
     categoryRepository: CategoryRepository
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
-    private val dateFormatter = DateTimeFormatter.ofPattern(DateFormats.DATE_PATTERN)
 
     private val currentMonth = LocalDate.now().format(monthFormatter)
 
@@ -42,4 +42,31 @@ class ExpensesViewModel(
         val expenses: List<ExpenseEntity> = emptyList(),
         val categories: List<CategoryEntity> = emptyList()
     )
+
+    fun createExpense(
+        amountMinor: Long,
+        date: String,
+        categoryId: Long,
+        note: String?,
+        paymentMethod: String?,
+        necessityRating: Int?
+    ) {
+        viewModelScope.launch {
+            expenseRepository.createExpense(
+                ExpenseEntity(
+                    amountMinor = amountMinor,
+                    currency = "MAD",
+                    date = date,
+                    categoryId = categoryId,
+                    note = note,
+                    paymentMethod = paymentMethod,
+                    necessityRating = necessityRating,
+                    isRecurringInstance = false,
+                    recurringSourceId = null,
+                    createdAt = 0L,
+                    updatedAt = 0L
+                )
+            )
+        }
+    }
 }
