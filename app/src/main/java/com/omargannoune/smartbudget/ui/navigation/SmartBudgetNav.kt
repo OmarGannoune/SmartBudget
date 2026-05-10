@@ -25,7 +25,8 @@ import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsScreen
 import com.omargannoune.smartbudget.ui.goals.GoalsViewModel
-import com.omargannoune.smartbudget.ui.screens.PlaceholderScreen
+import com.omargannoune.smartbudget.ui.settings.SettingsScreen
+import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 import com.phosphoricons.phosphor.PhosphorIcons
 import com.phosphoricons.phosphor.regular.Gear
 import com.phosphoricons.phosphor.regular.House
@@ -96,9 +97,15 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 )
             }
             composable(Routes.Settings) {
-                PlaceholderScreen(
-                    title = "Settings",
-                    modifier = Modifier.padding(innerPadding)
+                val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+                val uiState by viewModel.settingsUiState.collectAsState()
+                SettingsScreen(
+                    uiState = uiState,
+                    modifier = Modifier.padding(innerPadding),
+                    onCreateCategory = viewModel::createCategory,
+                    onRenameCategory = viewModel::renameCategory,
+                    onArchiveCategory = viewModel::archiveCategory,
+                    onDeleteCategory = viewModel::deleteCategory
                 )
             }
         }

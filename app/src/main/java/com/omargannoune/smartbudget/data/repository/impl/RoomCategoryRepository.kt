@@ -43,7 +43,12 @@ class RoomCategoryRepository(
 
     override suspend fun archiveCategory(category: CategoryEntity) {
         withContext(Dispatchers.IO) {
-            categoryDao.update(category.copy(isActive = false, updatedAt = timeProvider.nowMillis()))
+            categoryDao.update(
+                category.copy(
+                    isActive = !category.isActive,
+                    updatedAt = timeProvider.nowMillis()
+                )
+            )
         }
     }
 
