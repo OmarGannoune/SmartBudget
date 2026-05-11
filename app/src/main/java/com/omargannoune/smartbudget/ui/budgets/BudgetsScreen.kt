@@ -1,22 +1,11 @@
 package com.omargannoune.smartbudget.ui.budgets
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,10 +13,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import com.omargannoune.smartbudget.ui.components.SectionTitle
+import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.YearMonth
@@ -62,7 +56,7 @@ fun BudgetsScreen(
             remainingMinor = uiState.totalRemainingMinor,
             onEdit = { showMonthlyDialog = true }
         )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         SectionTitle(text = "Category limits")
         Spacer(modifier = Modifier.height(12.dp))
         if (uiState.categories.isEmpty()) {
@@ -107,8 +101,12 @@ private fun MonthlyBudgetCard(
     remainingMinor: Long?,
     onEdit: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -117,44 +115,42 @@ private fun MonthlyBudgetCard(
                 Text(
                     text = "Total budget",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
                 )
                 TextButton(onClick = onEdit) {
-                    Text(text = "Edit")
+                    Text(text = "Edit", color = MaterialTheme.colorScheme.tertiary)
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = limitMinor?.let { formatAmount(it) } ?: "No budget set",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
             if (limitMinor != null) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 LinearProgressIndicator(
                     progress = { (spentMinor.toFloat() / limitMinor).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = if ((remainingMinor ?: 0L) < 0L) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = if ((remainingMinor ?: 0L) < 0L) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Spent: ${formatAmount(spentMinor)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if ((remainingMinor ?: 0L) < 0L) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = "Spent: ${formatAmount(spentMinor)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if ((remainingMinor ?: 0L) < 0L) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
     }
@@ -165,10 +161,13 @@ private fun CategoryBudgetList(
     statuses: List<BudgetsViewModel.CategoryBudgetStatus>,
     onEdit: (CategoryEntity) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 80.dp)
+    ) {
         items(statuses, key = { it.category.id }) { status ->
             CategoryBudgetRow(
-                name = status.category.name,
+                category = status.category,
                 limitMinor = status.limitMinor,
                 spentMinor = status.spentMinor,
                 remainingMinor = status.remainingMinor,
@@ -181,70 +180,80 @@ private fun CategoryBudgetList(
 
 @Composable
 private fun CategoryBudgetRow(
-    name: String,
+    category: CategoryEntity,
     limitMinor: Long?,
     spentMinor: Long,
     remainingMinor: Long?,
     isOverspent: Boolean,
     onEdit: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (limitMinor == null) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val catColor = try {
+                        Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
+                    } catch (e: Exception) {
+                        MaterialTheme.colorScheme.tertiary
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(catColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = getCategoryIcon(category.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = catColor
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "No limit",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    val progressValue = (spentMinor.toFloat() / limitMinor).coerceIn(0f, 1f)
-                    Text(
-                        text = "Limit: ${formatAmount(limitMinor)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        progress = { progressValue },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = if (isOverspent) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Spent: ${formatAmount(spentMinor)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isOverspent) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                        text = category.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
+                TextButton(onClick = onEdit) {
+                    Text(text = if (limitMinor == null) "Set Limit" else "Edit", color = MaterialTheme.colorScheme.tertiary)
+                }
             }
-            TextButton(onClick = onEdit) {
-                Text(text = "Set")
+            
+            if (limitMinor != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                val progressValue = (spentMinor.toFloat() / limitMinor).coerceIn(0f, 1f)
+                LinearProgressIndicator(
+                    progress = { progressValue },
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                    color = if (isOverspent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = "Spent ${formatAmount(spentMinor)} / ${formatAmount(limitMinor)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = if (isOverspent) "Over by ${formatAmount(kotlin.math.abs(remainingMinor ?: 0L))}" else "${remainingMinor?.let { formatAmount(it) }} left",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isOverspent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
     }
@@ -253,7 +262,7 @@ private fun CategoryBudgetRow(
 @Composable
 private fun EmptyCategoryBudgets() {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -277,21 +286,23 @@ private fun MonthlyBudgetDialog(
     onSave: (Long) -> Unit
 ) {
     var amountText by remember {
-        mutableStateOf(existingLimitMinor?.let { formatAmount(it).removeSuffix(" MAD") } ?: "")
+        mutableStateOf(existingLimitMinor?.let { (it / 100).toString() } ?: "")
     }
     var amountError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Set monthly budget") },
+        title = { Text(text = "Monthly Budget", style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Total budget") },
+                    label = { Text("Total limit") },
                     isError = amountError != null,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (amountError != null) {
                     Text(
@@ -303,7 +314,7 @@ private fun MonthlyBudgetDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     amountError = null
                     val amountMinor = parseAmountToMinor(amountText)
@@ -312,9 +323,11 @@ private fun MonthlyBudgetDialog(
                     } else {
                         onSave(amountMinor)
                     }
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text("Save")
+                Text("Save", color = MaterialTheme.colorScheme.background)
             }
         },
         dismissButton = {
@@ -333,13 +346,13 @@ private fun CategoryBudgetDialog(
     onSave: (Long) -> Unit
 ) {
     var amountText by remember {
-        mutableStateOf(existingLimitMinor?.let { formatAmount(it).removeSuffix(" MAD") } ?: "")
+        mutableStateOf(existingLimitMinor?.let { (it / 100).toString() } ?: "")
     }
     var amountError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Set ${category.name} limit") },
+        title = { Text(text = "Limit for ${category.name}", style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -347,7 +360,9 @@ private fun CategoryBudgetDialog(
                     onValueChange = { amountText = it },
                     label = { Text("Category limit") },
                     isError = amountError != null,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (amountError != null) {
                     Text(
@@ -359,7 +374,7 @@ private fun CategoryBudgetDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     amountError = null
                     val amountMinor = parseAmountToMinor(amountText)
@@ -368,9 +383,11 @@ private fun CategoryBudgetDialog(
                     } else {
                         onSave(amountMinor)
                     }
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text("Save")
+                Text("Save", color = MaterialTheme.colorScheme.background)
             }
         },
         dismissButton = {

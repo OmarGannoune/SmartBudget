@@ -1,38 +1,29 @@
 package com.omargannoune.smartbudget.ui.recurring
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.RecurringRuleEntity
 import com.omargannoune.smartbudget.ui.components.AppTextButton
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -65,14 +56,20 @@ fun RecurringScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ScreenTitle(text = "Recurring bills")
-            AppTextButton(text = "Back", onClick = onBack)
+            IconButton(onClick = onBack) {
+                Icon(Lucide.X, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
         uiState.generatedCount?.let { count ->
             GenerationBanner(count = count)
             Spacer(modifier = Modifier.height(12.dp))
         }
-        PrimaryButton(text = "Add bill", onClick = { showAddDialog = true })
+        PrimaryButton(
+            text = "Add recurring bill",
+            onClick = { showAddDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.rules.isEmpty()) {
             EmptyRecurringState()
@@ -88,7 +85,7 @@ fun RecurringScreen(
 
     if (showAddDialog) {
         AddRecurringDialog(
-            categories = uiState.categories,
+            categories = uiState.categories.filter { it.isActive },
             onDismiss = { showAddDialog = false },
             onSave = { name, amountMinor, categoryId, frequency, startDate, endDate ->
                 onCreateRule(name, amountMinor, categoryId, frequency, startDate, endDate)
@@ -106,14 +103,22 @@ private fun GenerationBanner(count: Int) {
         "Generated $count recurring bills"
     }
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(12.dp)
-        )
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Lucide.Info, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -124,12 +129,15 @@ private fun RecurringList(
     onToggleActive: (RecurringRuleEntity) -> Unit,
     onDeleteRule: (Long) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 80.dp)
+    ) {
         items(rules, key = { it.id }) { rule ->
-            val categoryName = categories.firstOrNull { it.id == rule.categoryId }?.name
+            val category = categories.find { it.id == rule.categoryId }
             RecurringRow(
                 rule = rule,
-                categoryName = categoryName,
+                category = category,
                 onToggleActive = onToggleActive,
                 onDeleteRule = onDeleteRule
             )
@@ -140,45 +148,104 @@ private fun RecurringList(
 @Composable
 private fun RecurringRow(
     rule: RecurringRuleEntity,
-    categoryName: String?,
+    category: CategoryEntity?,
     onToggleActive: (RecurringRuleEntity) -> Unit,
     onDeleteRule: (Long) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val catColor = try {
+        Color(android.graphics.Color.parseColor(category?.color ?: "#5DE2C6"))
+    } catch (e: Exception) {
+        MaterialTheme.colorScheme.tertiary
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (rule.isActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        )
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = rule.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Amount: ${formatAmount(rule.amountMinor)}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Category: ${categoryName ?: "Unassigned"}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Frequency: ${rule.frequency}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Next: ${rule.nextOccurrenceDate}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppTextButton(
-                    text = if (rule.isActive) "Pause" else "Resume",
-                    onClick = { onToggleActive(rule) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(catColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = getCategoryIcon(category?.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = catColor
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = rule.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (rule.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            text = category?.name ?: "Unknown",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Text(
+                    text = formatAmount(rule.amountMinor),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (rule.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
-                AppTextButton(text = "Delete", onClick = { onDeleteRule(rule.id) })
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Frequency: ${rule.frequency.replaceFirstChar { it.uppercase() }}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Next: ${rule.nextOccurrenceDate}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row {
+                    IconButton(onClick = { onToggleActive(rule) }) {
+                        Icon(
+                            imageVector = if (rule.isActive) Lucide.CirclePause else Lucide.CirclePlay,
+                            contentDescription = if (rule.isActive) "Pause" else "Resume",
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    IconButton(onClick = { onDeleteRule(rule.id) }) {
+                        Icon(
+                            imageVector = Lucide.Trash2,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -187,9 +254,16 @@ private fun RecurringRow(
 @Composable
 private fun EmptyRecurringState() {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            imageVector = Lucide.CalendarClock,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No recurring bills",
             style = MaterialTheme.typography.titleMedium,
@@ -230,106 +304,99 @@ private fun AddRecurringDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Add recurring bill") },
+        title = { Text(text = "New Recurring Bill", style = MaterialTheme.typography.titleLarge) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 OutlinedTextField(
                     value = nameText,
                     onValueChange = { nameText = it },
-                    label = { Text("Bill name") },
+                    label = { Text("Name") },
                     isError = nameError != null,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (nameError != null) {
-                    Text(
-                        text = nameError ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text(text = nameError ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
+
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
                     label = { Text("Amount") },
                     isError = amountError != null,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (amountError != null) {
-                    Text(
-                        text = amountError ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text(text = amountError ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
+
                 CategoryDropdown(
                     categories = categories,
                     selectedId = selectedCategoryId,
                     onSelected = { selectedCategoryId = it }
                 )
+
                 FrequencyDropdown(
                     selected = frequency,
                     onSelected = { frequency = it }
                 )
-                OutlinedTextField(
-                    value = startDateText,
-                    onValueChange = { startDateText = it },
-                    label = { Text("Start date (YYYY-MM-DD)") },
-                    isError = dateError != null,
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = endDateText,
-                    onValueChange = { endDateText = it },
-                    label = { Text("End date (optional)") },
-                    singleLine = true
-                )
-                if (dateError != null) {
-                    Text(
-                        text = dateError ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = startDateText,
+                        onValueChange = { startDateText = it },
+                        label = { Text("Start (YYYY-MM-DD)") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = endDateText,
+                        onValueChange = { endDateText = it },
+                        label = { Text("End (Optional)") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     nameError = null
                     amountError = null
                     dateError = null
 
-                    if (nameText.isBlank()) {
-                        nameError = "Enter a bill name"
-                    }
+                    if (nameText.isBlank()) nameError = "Enter a name"
                     val amountMinor = parseAmountToMinor(amountText)
-                    if (amountMinor == null || amountMinor <= 0) {
-                        amountError = "Enter a valid amount"
-                    }
-                    if (startDateText.isBlank()) {
-                        dateError = "Enter a start date"
-                    }
-                    if (selectedCategoryId == null) {
-                        dateError = "Select a category"
-                    }
-                    if (nameError == null && amountError == null && dateError == null) {
+                    if (amountMinor == null || amountMinor <= 0) amountError = "Enter a valid amount"
+                    if (startDateText.isBlank()) dateError = "Enter a start date"
+                    
+                    if (nameError == null && amountError == null && dateError == null && selectedCategoryId != null) {
                         onSave(
                             nameText.trim(),
                             amountMinor ?: 0L,
-                            selectedCategoryId ?: 0L,
+                            selectedCategoryId!!,
                             frequency,
                             startDateText.trim(),
                             endDateText.trim().ifBlank { null }
                         )
                     }
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text(text = "Save")
+                Text("Save", color = MaterialTheme.colorScheme.background)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Text("Cancel")
             }
         }
     )
@@ -343,7 +410,8 @@ private fun CategoryDropdown(
     onSelected: (Long) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selected = categories.firstOrNull { it.id == selectedId }
+    val selected = categories.find { it.id == selectedId }
+
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
@@ -353,8 +421,24 @@ private fun CategoryDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Category") },
+            leadingIcon = {
+                if (selected != null) {
+                    val catColor = try {
+                        Color(android.graphics.Color.parseColor(selected.color ?: "#5DE2C6"))
+                    } catch (e: Exception) {
+                        MaterialTheme.colorScheme.tertiary
+                    }
+                    Icon(
+                        imageVector = getCategoryIcon(selected.icon),
+                        contentDescription = null,
+                        tint = catColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor()
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -362,7 +446,23 @@ private fun CategoryDropdown(
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
-                    text = { Text(category.name) },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val catColor = try {
+                                Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
+                            } catch (e: Exception) {
+                                MaterialTheme.colorScheme.tertiary
+                            }
+                            Icon(
+                                imageVector = getCategoryIcon(category.icon),
+                                contentDescription = null,
+                                tint = catColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(category.name)
+                        }
+                    },
                     onClick = {
                         onSelected(category.id)
                         expanded = false
@@ -386,12 +486,13 @@ private fun FrequencyDropdown(
         onExpandedChange = { expanded = !expanded }
     ) {
         OutlinedTextField(
-            value = selected,
+            value = selected.replaceFirstChar { it.uppercase() },
             onValueChange = {},
             readOnly = true,
             label = { Text("Frequency") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor()
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -399,7 +500,7 @@ private fun FrequencyDropdown(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(option.replaceFirstChar { it.uppercase() }) },
                     onClick = {
                         onSelected(option)
                         expanded = false

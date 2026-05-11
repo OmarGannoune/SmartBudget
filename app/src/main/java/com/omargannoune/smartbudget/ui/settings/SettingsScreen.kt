@@ -1,11 +1,17 @@
 package com.omargannoune.smartbudget.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,9 +23,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.ui.components.CategoryDefaults
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.getCategoryColor
+import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 
 @Composable
 fun SettingsScreen(
@@ -28,8 +38,8 @@ fun SettingsScreen(
     onClearData: () -> Unit,
     onUpdateCurrency: (String) -> Unit,
     onExportCsv: (android.content.Context) -> Unit,
-    onCreateCategory: (String) -> Unit,
-    onRenameCategory: (CategoryEntity, String) -> Unit,
+    onCreateCategory: (String, String?, String?) -> Unit,
+    onRenameCategory: (CategoryEntity, String, String?, String?) -> Unit,
     onArchiveCategory: (CategoryEntity) -> Unit,
     onDeleteCategory: (CategoryEntity) -> Unit,
     onClearExportMessage: () -> Unit
@@ -39,7 +49,7 @@ fun SettingsScreen(
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var showManageCategories by remember { mutableStateOf(false) }
     var showAddCategory by remember { mutableStateOf(false) }
-    var renamingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
+    var editingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
 
     Column(
         modifier = modifier
@@ -70,7 +80,7 @@ fun SettingsScreen(
                     CategoryManagementSection(
                         categories = uiState.categories,
                         onAddClick = { showAddCategory = true },
-                        onRename = { renamingCategory = it },
+                        onEdit = { editingCategory = it },
                         onArchive = onArchiveCategory,
                         onDelete = onDeleteCategory
                     )
@@ -132,8 +142,6 @@ fun SettingsScreen(
         }
     }
 
-    // --- DIALOGS ---
-
     if (uiState.exportMessage != null) {
         AlertDialog(
             onDismissRequest = onClearExportMessage,
@@ -174,16 +182,24 @@ fun SettingsScreen(
         CategoryEditDialog(
             title = "Add Category",
             onDismiss = { showAddCategory = false },
-            onSave = { onCreateCategory(it); showAddCategory = false }
+            onSave = { name, icon, color -> 
+                onCreateCategory(name, icon, color)
+                showAddCategory = false
+            }
         )
     }
 
-    renamingCategory?.let { category ->
+    editingCategory?.let { category ->
         CategoryEditDialog(
-            title = "Rename Category",
-            initialValue = category.name,
-            onDismiss = { renamingCategory = null },
-            onSave = { onRenameCategory(category, it); renamingCategory = null }
+            title = "Edit Category",
+            initialName = category.name,
+            initialIcon = category.icon,
+            initialColor = category.color,
+            onDismiss = { editingCategory = null },
+            onSave = { name, icon, color ->
+                onRenameCategory(category, name, icon, color)
+                editingCategory = null
+            }
         )
     }
 }
@@ -192,7 +208,7 @@ fun SettingsScreen(
 private fun CategoryManagementSection(
     categories: List<CategoryEntity>,
     onAddClick: () -> Unit,
-    onRename: (CategoryEntity) -> Unit,
+    onEdit: (CategoryEntity) -> Unit,
     onArchive: (CategoryEntity) -> Unit,
     onDelete: (CategoryEntity) -> Unit
 ) {
@@ -217,14 +233,35 @@ private fun CategoryManagementSection(
             }
         }
         categories.forEach { category ->
+            val catColor = getCategoryColor(category.color)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(category.name, modifier = Modifier.weight(1f))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(catColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = getCategoryIcon(category.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = catColor
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = category.name,
+                        color = if (category.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
                 Row {
-                    IconButton(onClick = { onRename(category) }) {
+                    IconButton(onClick = { onEdit(category) }) {
                         Icon(Lucide.Pencil, null, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = { onArchive(category) }) {
@@ -273,29 +310,147 @@ private fun CurrencyPickerDialog(
 @Composable
 private fun CategoryEditDialog(
     title: String,
-    initialValue: String = "",
+    initialName: String = "",
+    initialIcon: String? = CategoryDefaults.Icons.first(),
+    initialColor: String? = CategoryDefaults.Colors.first(),
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String, String?, String?) -> Unit
 ) {
-    var text by remember { mutableStateOf(initialValue) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("Name") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            Button(onClick = { if (text.isNotBlank()) onSave(text) }) { Text("Save") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+    var name by remember { mutableStateOf(initialName) }
+    var selectedIcon by remember { mutableStateOf(initialIcon) }
+    var selectedColor by remember { mutableStateOf(initialColor) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(text = title, style = MaterialTheme.typography.titleLarge)
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Category Name") },
+                    placeholder = { Text("e.g. Groceries") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select Icon", style = MaterialTheme.typography.labelMedium)
+                    Box(modifier = Modifier.height(150.dp)) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(4),
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(CategoryDefaults.Icons) { iconName ->
+                                val isSelected = selectedIcon == iconName
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isSelected) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .clickable { selectedIcon = iconName }
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = getCategoryIcon(iconName),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select Color", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CategoryDefaults.Colors.take(6).forEach { colorHex ->
+                            ColorOption(
+                                colorHex = colorHex,
+                                isSelected = selectedColor == colorHex,
+                                onClick = { selectedColor = colorHex }
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CategoryDefaults.Colors.drop(6).forEach { colorHex ->
+                            ColorOption(
+                                colorHex = colorHex,
+                                isSelected = selectedColor == colorHex,
+                                onClick = { selectedColor = colorHex }
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = { if (name.isNotBlank()) onSave(name, selectedIcon, selectedColor) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                    ) {
+                        Text("Save", color = MaterialTheme.colorScheme.background)
+                    }
+                }
+            }
         }
-    )
+    }
+}
+
+@Composable
+private fun ColorOption(
+    colorHex: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(Color(android.graphics.Color.parseColor(colorHex)))
+            .clickable(onClick = onClick)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = Color.White,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isSelected) {
+            Icon(Lucide.Check, null, modifier = Modifier.size(16.dp), tint = Color.White)
+        }
+    }
 }
 
 @Composable

@@ -82,6 +82,8 @@ class HomeViewModel(
 
     data class CategorySpend(
         val name: String,
+        val icon: String?,
+        val color: String?,
         val spentMinor: Long
     )
 
@@ -94,7 +96,12 @@ class HomeViewModel(
             if (spent <= 0L) {
                 null
             } else {
-                CategorySpend(name = category.name, spentMinor = spent)
+                CategorySpend(
+                    name = category.name,
+                    icon = category.icon,
+                    color = category.color,
+                    spentMinor = spent
+                )
             }
         }.sortedByDescending { it.spentMinor }
             .take(3)

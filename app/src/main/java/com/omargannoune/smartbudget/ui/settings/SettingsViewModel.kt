@@ -56,15 +56,19 @@ class SettingsViewModel(
         }
     }
 
-    fun createCategory(name: String) {
+    fun createCategory(name: String, icon: String?, color: String?) {
         viewModelScope.launch {
-            categoryRepository.createCategory(name = name, icon = null, color = null)
+            categoryRepository.createCategory(name = name, icon = icon, color = color)
         }
     }
 
-    fun renameCategory(category: CategoryEntity, newName: String) {
+    fun renameCategory(category: CategoryEntity, newName: String, newIcon: String?, newColor: String?) {
         viewModelScope.launch {
-            categoryRepository.updateCategory(category.copy(name = newName))
+            categoryRepository.updateCategory(category.copy(
+                name = newName,
+                icon = newIcon,
+                color = newColor
+            ))
         }
     }
 

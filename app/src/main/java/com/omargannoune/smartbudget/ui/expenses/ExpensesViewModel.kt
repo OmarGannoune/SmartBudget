@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 
 class ExpensesViewModel(
     private val expenseRepository: ExpenseRepository,
-    categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
 
@@ -32,13 +32,14 @@ class ExpensesViewModel(
             combine(
                 expenseRepository.observeExpensesForMonth(month),
                 expenseRepository.observeTotalForMonth(month),
-                categoryRepository.observeActiveCategories()
+                categoryRepository.observeAllCategories()
             ) { expenses, total, categories ->
                 ExpensesUiState(
                     month = month,
                     totalMinor = total,
                     expenses = expenses,
-                    categories = categories
+                    allCategories = categories,
+                    activeCategories = categories.filter { it.isActive }
                 )
             }
         }
@@ -48,7 +49,8 @@ class ExpensesViewModel(
         val month: String = "",
         val totalMinor: Long = 0L,
         val expenses: List<ExpenseEntity> = emptyList(),
-        val categories: List<CategoryEntity> = emptyList()
+        val allCategories: List<CategoryEntity> = emptyList(),
+        val activeCategories: List<CategoryEntity> = emptyList()
     )
 
     fun createExpense(
@@ -71,8 +73,8 @@ class ExpensesViewModel(
                     necessityRating = necessityRating,
                     isRecurringInstance = false,
                     recurringSourceId = null,
-                    createdAt = 0L,
-                    updatedAt = 0L
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
                 )
             )
         }

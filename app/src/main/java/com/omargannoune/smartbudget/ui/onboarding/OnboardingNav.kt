@@ -38,8 +38,11 @@ import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.AppTextButton
+import com.omargannoune.smartbudget.ui.components.CategoryDefaults
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.getCategoryIcon
+import com.omargannoune.smartbudget.ui.components.getCategoryColor
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -143,15 +146,16 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
+                verticalArrangement = Arrangement.spacedBy(40.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.onboarding_illustration),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(450.dp),
+                        .height(300.dp),
                     contentScale = ContentScale.Fit
                 )
                 Column(
@@ -514,51 +518,7 @@ private fun CategoriesSetupScreen(
             }
 
             if (categories.isNotEmpty()) {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.heightIn(max = 300.dp)
-                ) {
-                    items(categories, key = { it.id }) { category ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                val catColor = try {
-                                    Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
-                                } catch (e: Exception) {
-                                    MaterialTheme.colorScheme.tertiary
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(catColor.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = getIconByName(category.icon),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = catColor
-                                    )
-                                }
-                                Text(
-                                    text = category.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
+                CategoryPreviewList(categories = categories)
             }
         }
     }
@@ -580,28 +540,8 @@ private fun AddCategoryDialog(
     onConfirm: (String, String?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf<String?>("ShoppingBag") }
-    var selectedColor by remember { mutableStateOf<String?>("#5DE2C6") }
-
-    val iconOptions = listOf(
-        "ShoppingBag" to Lucide.ShoppingBag,
-        "Utensils" to Lucide.Utensils,
-        "Bus" to Lucide.Bus,
-        "HeartPulse" to Lucide.HeartPulse,
-        "Gamepad2" to Lucide.Gamepad2,
-        "GraduationCap" to Lucide.GraduationCap,
-        "Home" to Lucide.House,
-        "Zap" to Lucide.Zap,
-        "Car" to Lucide.Car,
-        "Smartphone" to Lucide.Smartphone,
-        "Plane" to Lucide.Plane,
-        "Gift" to Lucide.Gift
-    )
-
-    val colorOptions = listOf(
-        "#5DE2C6", "#C7D1FF", "#FFFFB86B", "#FF6B6B",
-        "#3BD671", "#F5C451", "#A9B1BF", "#F2F4F8"
-    )
+    var selectedIcon by remember { mutableStateOf<String?>(CategoryDefaults.Icons.first()) }
+    var selectedColor by remember { mutableStateOf<String?>(CategoryDefaults.Colors.first()) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -633,14 +573,14 @@ private fun AddCategoryDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(iconOptions) { (key, icon) ->
-                                val isSelected = selectedIcon == key
+                            items(CategoryDefaults.Icons) { iconName ->
+                                val isSelected = selectedIcon == iconName
                                 Box(
                                     modifier = Modifier
                                         .aspectRatio(1f)
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(if (isSelected) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                        .clickable { selectedIcon = key }
+                                        .clickable { selectedIcon = iconName }
                                         .border(
                                             width = if (isSelected) 2.dp else 0.dp,
                                             color = if (isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
@@ -649,7 +589,7 @@ private fun AddCategoryDialog(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = icon,
+                                        imageVector = getCategoryIcon(iconName),
                                         contentDescription = null,
                                         modifier = Modifier.size(24.dp),
                                         tint = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -666,24 +606,24 @@ private fun AddCategoryDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        colorOptions.forEach { colorHex ->
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(android.graphics.Color.parseColor(colorHex)))
-                                    .clickable { selectedColor = colorHex }
-                                    .border(
-                                        width = if (selectedColor == colorHex) 2.dp else 0.dp,
-                                        color = Color.White,
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (selectedColor == colorHex) {
-                                    Icon(Lucide.Check, null, modifier = Modifier.size(16.dp), tint = Color.White)
-                                }
-                            }
+                        CategoryDefaults.Colors.take(6).forEach { colorHex ->
+                            ColorOption(
+                                colorHex = colorHex,
+                                isSelected = selectedColor == colorHex,
+                                onClick = { selectedColor = colorHex }
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        CategoryDefaults.Colors.drop(6).forEach { colorHex ->
+                            ColorOption(
+                                colorHex = colorHex,
+                                isSelected = selectedColor == colorHex,
+                                onClick = { selectedColor = colorHex }
+                            )
                         }
                     }
                 }
@@ -709,21 +649,73 @@ private fun AddCategoryDialog(
     }
 }
 
-private fun getIconByName(name: String?): ImageVector {
-    return when (name) {
-        "ShoppingBag" -> Lucide.ShoppingBag
-        "Utensils" -> Lucide.Utensils
-        "Bus" -> Lucide.Bus
-        "HeartPulse" -> Lucide.HeartPulse
-        "Gamepad2" -> Lucide.Gamepad2
-        "GraduationCap" -> Lucide.GraduationCap
-        "Home" -> Lucide.House
-        "Zap" -> Lucide.Zap
-        "Car" -> Lucide.Car
-        "Smartphone" -> Lucide.Smartphone
-        "Plane" -> Lucide.Plane
-        "Gift" -> Lucide.Gift
-        else -> Lucide.LayoutGrid
+@Composable
+private fun ColorOption(
+    colorHex: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(Color(android.graphics.Color.parseColor(colorHex)))
+            .clickable(onClick = onClick)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = Color.White,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isSelected) {
+            Icon(Lucide.Check, null, modifier = Modifier.size(16.dp), tint = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun CategoryPreviewList(categories: List<CategoryEntity>) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.heightIn(max = 300.dp)
+    ) {
+        items(categories, key = { it.id }) { category ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    val catColor = getCategoryColor(category.color)
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(catColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = getCategoryIcon(category.icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = catColor
+                        )
+                    }
+                    Text(
+                        text = category.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }
 

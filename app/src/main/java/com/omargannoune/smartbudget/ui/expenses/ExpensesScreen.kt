@@ -1,40 +1,28 @@
 package com.omargannoune.smartbudget.ui.expenses
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -82,18 +70,25 @@ fun ExpensesScreen(
         Spacer(modifier = Modifier.height(16.dp))
         TotalCard(totalMinor = uiState.totalMinor)
         Spacer(modifier = Modifier.height(20.dp))
-        PrimaryButton(text = "Add expense", onClick = { showAddExpense = true })
+        PrimaryButton(
+            text = "Add expense",
+            onClick = { showAddExpense = true },
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.expenses.isEmpty()) {
             EmptyExpensesState()
         } else {
-            ExpensesList(expenses = uiState.expenses)
+            ExpensesList(
+                expenses = uiState.expenses,
+                categories = uiState.allCategories
+            )
         }
     }
 
     if (showAddExpense) {
         AddExpenseDialog(
-            categories = uiState.categories,
+            categories = uiState.activeCategories,
             onDismiss = { showAddExpense = false },
             onSave = { amountMinor, date, categoryId, note, paymentMethod, necessity ->
                 onAddExpense(amountMinor, date, categoryId, note, paymentMethod, necessity)
@@ -111,27 +106,29 @@ private fun MonthHeader(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = formatMonthLabel(month),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        IconButton(onClick = onPreviousMonth) {
-            Text(
-                text = "\u25C0",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        IconButton(onClick = onNextMonth) {
-            Text(
-                text = "\u25B6",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row {
+            IconButton(onClick = onPreviousMonth) {
+                Icon(
+                    imageVector = Lucide.ChevronLeft,
+                    contentDescription = "Previous",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onNextMonth) {
+                Icon(
+                    imageVector = Lucide.ChevronRight,
+                    contentDescription = "Next",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -146,35 +143,48 @@ private fun formatMonthLabel(month: String): String {
 
 @Composable
 private fun TotalCard(totalMinor: Long) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "This month",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                text = "Total Spent",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Spent: ${formatAmount(totalMinor)}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                text = formatAmount(totalMinor),
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
 @Composable
-private fun ExpensesList(expenses: List<ExpenseEntity>) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 80.dp)
+    ) {
         items(expenses, key = { it.id }) { expense ->
-            ExpenseRow(expense = expense)
+            val category = categories.find { it.id == expense.categoryId }
+            ExpenseRow(expense = expense, category = category)
         }
     }
 }
 
 @Composable
-private fun ExpenseRow(expense: ExpenseEntity) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun ExpenseRow(expense: ExpenseEntity, category: CategoryEntity?) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -182,24 +192,57 @@ private fun ExpenseRow(expense: ExpenseEntity) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                val catColor = try {
+                    Color(android.graphics.Color.parseColor(category?.color ?: "#5DE2C6"))
+                } catch (e: Exception) {
+                    MaterialTheme.colorScheme.tertiary
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(catColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = getCategoryIcon(category?.icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = catColor
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = category?.name ?: "Unknown",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (!expense.note.isNullOrBlank()) {
+                        Text(
+                            text = expense.note,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "Category ${expense.categoryId}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = formatAmount(expense.amountMinor),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = expense.date,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = formatAmount(expense.amountMinor),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }
@@ -207,9 +250,18 @@ private fun ExpenseRow(expense: ExpenseEntity) {
 @Composable
 private fun EmptyExpensesState() {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            imageVector = Lucide.ReceiptText,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "No expenses yet",
             style = MaterialTheme.typography.titleMedium,
@@ -219,11 +271,13 @@ private fun EmptyExpensesState() {
         Text(
             text = "Add your first expense to start tracking.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddExpenseDialog(
     categories: List<CategoryEntity>,
@@ -246,20 +300,24 @@ private fun AddExpenseDialog(
         mutableStateOf(categories.firstOrNull()?.id)
     }
     var amountError by remember { mutableStateOf<String?>(null) }
-    var dateError by remember { mutableStateOf<String?>(null) }
     var categoryError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Add expense") },
+        title = { Text(text = "New Expense", style = MaterialTheme.typography.titleLarge) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
                     label = { Text("Amount") },
                     isError = amountError != null,
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 if (amountError != null) {
                     Text(
@@ -268,70 +326,63 @@ private fun AddExpenseDialog(
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
-                OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { dateText = it },
-                    label = { Text("Date") },
-                    isError = dateError != null,
-                    singleLine = true
-                )
-                if (dateError != null) {
-                    Text(
-                        text = dateError ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+                
                 CategoryPicker(
                     categories = categories,
                     selectedId = selectedCategoryId,
                     onSelected = { selectedCategoryId = it },
                     isError = categoryError != null
                 )
-                if (categoryError != null) {
-                    Text(
-                        text = categoryError ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    label = { Text("Note (optional)") }
+                    label = { Text("Note (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
+                
                 OutlinedTextField(
                     value = paymentMethodText,
                     onValueChange = { paymentMethodText = it },
-                    label = { Text("Payment method (optional)") }
+                    label = { Text("Payment Method") },
+                    placeholder = { Text("Cash, Card, etc.") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
-                OutlinedTextField(
-                    value = necessityText,
-                    onValueChange = { necessityText = it },
-                    label = { Text("How necessary was this? (1-10)") },
-                    singleLine = true
-                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = dateText,
+                        onValueChange = { dateText = it },
+                        label = { Text("Date") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = necessityText,
+                        onValueChange = { necessityText = it },
+                        label = { Text("Necessity (1-10)") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     amountError = null
-                    dateError = null
                     categoryError = null
 
                     val amountMinor = parseAmountToMinor(amountText)
                     if (amountMinor == null || amountMinor <= 0) {
                         amountError = "Enter a valid amount"
                     }
-                    val dateValid = runCatching { LocalDate.parse(dateText) }.isSuccess
-                    if (!dateValid) {
-                        dateError = "Choose a valid date"
-                    }
                     if (selectedCategoryId == null) {
                         categoryError = "Select a category"
                     }
-                    if (amountError == null && dateError == null && categoryError == null) {
+                    if (amountError == null && categoryError == null) {
                         val necessity = necessityText.toIntOrNull()?.coerceIn(1, 10)
                         onSave(
                             amountMinor ?: 0L,
@@ -342,9 +393,11 @@ private fun AddExpenseDialog(
                             necessity
                         )
                     }
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
             ) {
-                Text("Save expense")
+                Text("Save", color = MaterialTheme.colorScheme.background)
             }
         },
         dismissButton = {
@@ -364,12 +417,7 @@ private fun CategoryPicker(
     isError: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selected = categories.firstOrNull { it.id == selectedId }
-    val labelColor = if (isError) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val selected = categories.find { it.id == selectedId }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -379,12 +427,28 @@ private fun CategoryPicker(
             value = selected?.name ?: "",
             onValueChange = {},
             readOnly = true,
-            label = { Text("Category", color = labelColor) },
+            label = { Text("Category") },
             isError = isError,
+            leadingIcon = {
+                if (selected != null) {
+                    val catColor = try {
+                        Color(android.graphics.Color.parseColor(selected.color ?: "#5DE2C6"))
+                    } catch (e: Exception) {
+                        MaterialTheme.colorScheme.tertiary
+                    }
+                    Icon(
+                        imageVector = getCategoryIcon(selected.icon),
+                        contentDescription = null,
+                        tint = catColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+            shape = RoundedCornerShape(12.dp)
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -392,17 +456,27 @@ private fun CategoryPicker(
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
-                    text = { Text(category.name) },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val catColor = try {
+                                Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
+                            } catch (e: Exception) {
+                                MaterialTheme.colorScheme.tertiary
+                            }
+                            Icon(
+                                imageVector = getCategoryIcon(category.icon),
+                                contentDescription = null,
+                                tint = catColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(category.name)
+                        }
+                    },
                     onClick = {
                         onSelected(category.id)
                         expanded = false
                     }
-                )
-            }
-            if (categories.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text("Add a category first") },
-                    onClick = { expanded = false }
                 )
             }
         }
