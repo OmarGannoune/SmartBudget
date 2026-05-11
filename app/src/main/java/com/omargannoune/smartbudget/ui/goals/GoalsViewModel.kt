@@ -39,6 +39,25 @@ class GoalsViewModel(
         }
     }
 
+    fun editGoal(id: Long, name: String, targetAmountMinor: Long, targetDate: String?) {
+        viewModelScope.launch {
+            val goal = goalsUiState.value.goals.firstOrNull { it.id == id } ?: return@launch
+            savingsRepository.updateGoal(
+                goal.copy(
+                    name = name,
+                    targetAmountMinor = targetAmountMinor,
+                    targetDate = targetDate
+                )
+            )
+        }
+    }
+
+    fun deleteGoal(id: Long) {
+        viewModelScope.launch {
+            savingsRepository.deleteGoal(id)
+        }
+    }
+
     fun addContribution(goalId: Long, amountMinor: Long, note: String?) {
         viewModelScope.launch {
             val goal = goalsUiState.value.goals.firstOrNull { it.id == goalId } ?: return@launch

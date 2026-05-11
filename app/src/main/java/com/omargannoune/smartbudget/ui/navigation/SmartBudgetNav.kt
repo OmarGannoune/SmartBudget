@@ -113,6 +113,8 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
                     onAddGoal = viewModel::createGoal,
+                    onEditGoal = viewModel::editGoal,
+                    onDeleteGoal = viewModel::deleteGoal,
                     onAddContribution = viewModel::addContribution
                 )
             }

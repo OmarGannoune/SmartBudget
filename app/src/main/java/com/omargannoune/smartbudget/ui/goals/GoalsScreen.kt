@@ -2,6 +2,7 @@ package com.omargannoune.smartbudget.ui.goals
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,12 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,11 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
-import com.omargannoune.smartbudget.ui.components.AppTextButton
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -40,10 +46,14 @@ fun GoalsScreen(
     uiState: GoalsViewModel.GoalsUiState,
     modifier: Modifier = Modifier,
     onAddGoal: (name: String, targetMinor: Long, targetDate: String?) -> Unit,
+    onEditGoal: (id: Long, name: String, targetMinor: Long, targetDate: String?) -> Unit,
+    onDeleteGoal: (id: Long) -> Unit,
     onAddContribution: (goalId: Long, amountMinor: Long, note: String?) -> Unit
 ) {
     var showAddGoal by remember { mutableStateOf(false) }
+    var editingGoal by remember { mutableStateOf<SavingsGoalEntity?>(null) }
     var selectedGoalId by remember { mutableStateOf<Long?>(null) }
+    var goalToDelete by remember { mutableStateOf<SavingsGoalEntity?>(null) }
 
     Column(
         modifier = modifier
@@ -52,24 +62,53 @@ fun GoalsScreen(
     ) {
         ScreenTitle(text = "Savings goals")
         Spacer(modifier = Modifier.height(12.dp))
-        PrimaryButton(text = "Add goal", onClick = { showAddGoal = true })
+        PrimaryButton(
+            text = "Add goal",
+            onClick = { showAddGoal = true },
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
         if (uiState.goals.isEmpty()) {
             EmptyGoalsState()
         } else {
             GoalsList(
                 goals = uiState.goals,
-                onAddContribution = { selectedGoalId = it }
+                onAddContribution = { selectedGoalId = it },
+                onEdit = { editingGoal = it },
+                onDelete = { goalToDelete = it }
             )
         }
     }
 
     if (showAddGoal) {
-        AddGoalDialog(
+        AddGoalBottomSheet(
+            existingGoal = null,
             onDismiss = { showAddGoal = false },
             onSave = { name, amountMinor, targetDate ->
                 onAddGoal(name, amountMinor, targetDate)
                 showAddGoal = false
+            }
+        )
+    }
+
+    editingGoal?.let { goal ->
+        AddGoalBottomSheet(
+            existingGoal = goal,
+            onDismiss = { editingGoal = null },
+            onSave = { name, amountMinor, targetDate ->
+                onEditGoal(goal.id, name, amountMinor, targetDate)
+                editingGoal = null
+            }
+        )
+    }
+
+    goalToDelete?.let { goal ->
+        DeleteGoalConfirmationDialog(
+            goalName = goal.name,
+            onDismiss = { goalToDelete = null },
+            onConfirm = {
+                onDeleteGoal(goal.id)
+                goalToDelete = null
             }
         )
     }
@@ -88,17 +127,29 @@ fun GoalsScreen(
 @Composable
 private fun GoalsList(
     goals: List<SavingsGoalEntity>,
-    onAddContribution: (Long) -> Unit
+    onAddContribution: (Long) -> Unit,
+    onEdit: (SavingsGoalEntity) -> Unit,
+    onDelete: (SavingsGoalEntity) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 80.dp)) {
         items(goals, key = { it.id }) { goal ->
-            GoalCard(goal = goal, onAddContribution = onAddContribution)
+            GoalCard(
+                goal = goal,
+                onAddContribution = onAddContribution,
+                onEdit = onEdit,
+                onDelete = onDelete
+            )
         }
     }
 }
 
 @Composable
-private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit) {
+private fun GoalCard(
+    goal: SavingsGoalEntity,
+    onAddContribution: (Long) -> Unit,
+    onEdit: (SavingsGoalEntity) -> Unit,
+    onDelete: (SavingsGoalEntity) -> Unit
+) {
     val remaining = (goal.targetAmountMinor - goal.currentAmountMinor).coerceAtLeast(0)
     val progress = if (goal.targetAmountMinor > 0L) {
         (goal.currentAmountMinor.toFloat() / goal.targetAmountMinor).coerceIn(0f, 1f)
@@ -106,22 +157,44 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
         0f
     }
     val deadlineInfo = remember(goal.targetDate) { buildDeadlineInfo(goal.targetDate) }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = goal.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = goal.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row {
+                    TextButton(onClick = { onEdit(goal) }) {
+                        Text("Edit", color = MaterialTheme.colorScheme.tertiary)
+                    }
+                    TextButton(onClick = { onDelete(goal) }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
                 color = if (goal.isCompleted) {
                     MaterialTheme.colorScheme.tertiary
                 } else {
                     MaterialTheme.colorScheme.primary
-                }
+                },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -130,19 +203,19 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
             ) {
                 Text(
                     text = "Saved: ${formatAmount(goal.currentAmountMinor)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "Target: ${formatAmount(goal.targetAmountMinor)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Remaining: ${formatAmount(remaining)}",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = if (goal.isCompleted) {
                     MaterialTheme.colorScheme.tertiary
                 } else {
@@ -174,7 +247,11 @@ private fun GoalCard(goal: SavingsGoalEntity, onAddContribution: (Long) -> Unit)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            PrimaryButton(text = "Add contribution", onClick = { onAddContribution(goal.id) })
+            PrimaryButton(
+                text = "Add contribution",
+                onClick = { onAddContribution(goal.id) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -200,82 +277,38 @@ private fun EmptyGoalsState() {
 }
 
 @Composable
-private fun AddGoalDialog(
+private fun DeleteGoalConfirmationDialog(
+    goalName: String,
     onDismiss: () -> Unit,
-    onSave: (name: String, targetMinor: Long, targetDate: String?) -> Unit
+    onConfirm: () -> Unit
 ) {
-    var nameText by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
-    var dateText by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf<String?>(null) }
-    var amountError by remember { mutableStateOf<String?>(null) }
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Create goal") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = nameText,
-                    onValueChange = { nameText = it },
-                    label = { Text("Goal name") },
-                    isError = nameError != null,
-                    singleLine = true
-                )
-                if (nameError != null) {
-                    Text(
-                        text = nameError ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = it },
-                    label = { Text("Target amount") },
-                    isError = amountError != null,
-                    singleLine = true
-                )
-                if (amountError != null) {
-                    Text(
-                        text = amountError ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-                OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { dateText = it },
-                    label = { Text("Target date (optional)") },
-                    singleLine = true
-                )
-            }
-        },
-        confirmButton = {
-            AppTextButton(
-                text = "Save goal",
-                onClick = {
-                    nameError = null
-                    amountError = null
-                    val amountMinor = parseAmountToMinor(amountText)
-                    if (nameText.isBlank()) {
-                        nameError = "Enter a goal name"
-                    }
-                    if (amountMinor == null || amountMinor <= 0) {
-                        amountError = "Enter a valid amount"
-                    }
-                    if (nameError == null && amountError == null) {
-                        onSave(
-                            nameText.trim(),
-                            amountMinor ?: 0L,
-                            dateText.trim().ifBlank { null }
-                        )
-                    }
-                }
+        title = { 
+            Text(
+                text = "Delete goal?",
+                style = MaterialTheme.typography.titleLarge
             )
         },
+        text = {
+            Text(
+                text = "Are you sure you want to delete \"$goalName\"? This action cannot be undone.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Delete", color = MaterialTheme.colorScheme.background)
+            }
+        },
         dismissButton = {
-            AppTextButton(text = "Cancel", onClick = onDismiss)
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
     )
 }
@@ -291,7 +324,12 @@ private fun AddContributionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Add contribution") },
+        title = { 
+            Text(
+                text = "Add contribution",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -299,7 +337,9 @@ private fun AddContributionDialog(
                     onValueChange = { amountText = it },
                     label = { Text("Amount") },
                     isError = amountError != null,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (amountError != null) {
                     Text(
@@ -311,13 +351,14 @@ private fun AddContributionDialog(
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    label = { Text("Note (optional)") }
+                    label = { Text("Note (optional)") },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
-            AppTextButton(
-                text = "Save",
+            Button(
                 onClick = {
                     amountError = null
                     val amountMinor = parseAmountToMinor(amountText)
@@ -327,11 +368,17 @@ private fun AddContributionDialog(
                     if (amountError == null) {
                         onSave(amountMinor ?: 0L, noteText.trim().ifBlank { null })
                     }
-                }
-            )
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            ) {
+                Text("Save", color = MaterialTheme.colorScheme.background)
+            }
         },
         dismissButton = {
-            AppTextButton(text = "Cancel", onClick = onDismiss)
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
     )
 }
