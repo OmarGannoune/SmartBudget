@@ -88,9 +88,9 @@ class OnboardingViewModel(
         }
     }
 
-    fun createCategory(name: String) {
+    fun createCategory(name: String, icon: String?, color: String?) {
         viewModelScope.launch {
-            categoryRepository.createCategory(name = name, icon = null, color = null)
+            categoryRepository.createCategory(name = name, icon = icon, color = color)
         }
     }
 

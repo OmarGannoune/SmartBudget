@@ -2,23 +2,32 @@ package com.omargannoune.smartbudget.ui.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -147,20 +156,20 @@ private fun WelcomeScreen(onStart: () -> Unit, onSkip: () -> Unit) {
                 )
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
                         text = "SMARTBUDGET",
                         style = MaterialTheme.typography.displayLarge,
                         color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Left
+                        textAlign = TextAlign.Center
                     )
                     Text(
                         text = "Plan your month.\nTrack every expense.\nReach your goals.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Left
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -297,7 +306,7 @@ private fun GoalsSetupScreen(
         title = "Create your goals",
         subtitle = "Small goals add up fast. Add as many as you want.",
         onPrimaryClick = onContinue,
-        primaryText = "Continue",
+        primaryText = if (goals.isNotEmpty()) "Continue (${goals.size} added)" else "Continue",
         onSecondaryClick = onSkip,
         secondaryText = "Skip",
     ) {
@@ -321,7 +330,7 @@ private fun GoalsSetupScreen(
             if (goals.isNotEmpty()) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.heightIn(max = 240.dp)
+                    modifier = Modifier.heightIn(max = 300.dp)
                 ) {
                     items(goals) { goal ->
                         Card(
@@ -336,7 +345,12 @@ private fun GoalsSetupScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(goal.name, style = MaterialTheme.typography.bodyLarge)
+                                Column {
+                                    Text(goal.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                    goal.targetDate?.let {
+                                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
                                 Text(
                                     text = formatAmount(goal.targetAmountMinor),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -379,11 +393,18 @@ private fun AddGoalDialog(
         date.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("New Goal") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text("New Goal", style = MaterialTheme.typography.titleLarge)
+                
                 OnboardingTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -411,32 +432,34 @@ private fun AddGoalDialog(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedLabelColor = MaterialTheme.colorScheme.tertiary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val amountMinor = parseAmountToMinor(amount)
-                    if (name.isNotBlank() && amountMinor != null) {
-                        onConfirm(name, amountMinor, formattedDate)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
                     }
-                },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.tertiary)
-            ) {
-                Text("Add Goal", fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                    Button(
+                        onClick = {
+                            val amountMinor = parseAmountToMinor(amount)
+                            if (name.isNotBlank() && amountMinor != null) {
+                                onConfirm(name, amountMinor, formattedDate)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                    ) {
+                        Text("Add", color = MaterialTheme.colorScheme.background)
+                    }
+                }
             }
         }
-    )
+    }
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -459,12 +482,11 @@ private fun AddGoalDialog(
 @Composable
 private fun CategoriesSetupScreen(
     categories: List<CategoryEntity>,
-    onAddCategory: (String) -> Unit,
+    onAddCategory: (String, String?, String?) -> Unit,
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
-    var categoryName by remember { mutableStateOf("") }
-    var errorText by remember { mutableStateOf<String?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
     OnboardingScreenContainer(
         title = "Pick your categories",
@@ -475,63 +497,233 @@ private fun CategoriesSetupScreen(
         secondaryText = "Skip",
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            OnboardingTextField(
-                value = categoryName,
-                onValueChange = { categoryName = it },
-                label = "Category name",
-                placeholder = "Groceries",
-                isError = errorText != null,
-                errorMessage = errorText
-            )
-            PrimaryButton(
-                text = "Add category",
-                onClick = {
-                    errorText = null
-                    val trimmed = categoryName.trim()
-                    if (trimmed.isBlank()) {
-                        errorText = "Enter a category name"
-                    } else if (categories.any { it.name.equals(trimmed, ignoreCase = true) }) {
-                        errorText = "Category already exists"
-                    } else {
-                        onAddCategory(trimmed)
-                        categoryName = ""
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Button(
+                onClick = { showAddDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Icon(Lucide.Plus, null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Add a new category", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+            }
+
             if (categories.isNotEmpty()) {
-                CategoryPreviewList(categories = categories)
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    items(categories, key = { it.id }) { category ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                val catColor = try {
+                                    Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
+                                } catch (e: Exception) {
+                                    MaterialTheme.colorScheme.tertiary
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(catColor.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = getIconByName(category.icon),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = catColor
+                                    )
+                                }
+                                Text(
+                                    text = category.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, icon, color ->
+                onAddCategory(name, icon, color)
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddCategoryDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String?, String?) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedIcon by remember { mutableStateOf<String?>("ShoppingBag") }
+    var selectedColor by remember { mutableStateOf<String?>("#5DE2C6") }
+
+    val iconOptions = listOf(
+        "ShoppingBag" to Lucide.ShoppingBag,
+        "Utensils" to Lucide.Utensils,
+        "Bus" to Lucide.Bus,
+        "HeartPulse" to Lucide.HeartPulse,
+        "Gamepad2" to Lucide.Gamepad2,
+        "GraduationCap" to Lucide.GraduationCap,
+        "Home" to Lucide.House,
+        "Zap" to Lucide.Zap,
+        "Car" to Lucide.Car,
+        "Smartphone" to Lucide.Smartphone,
+        "Plane" to Lucide.Plane,
+        "Gift" to Lucide.Gift
+    )
+
+    val colorOptions = listOf(
+        "#5DE2C6", "#C7D1FF", "#FFFFB86B", "#FF6B6B",
+        "#3BD671", "#F5C451", "#A9B1BF", "#F2F4F8"
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(text = "New Category", style = MaterialTheme.typography.titleLarge)
+
+                OnboardingTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = "Category Name",
+                    placeholder = "e.g. Groceries"
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select Icon", style = MaterialTheme.typography.labelMedium)
+                    Box(modifier = Modifier.height(150.dp)) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(4),
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(iconOptions) { (key, icon) ->
+                                val isSelected = selectedIcon == key
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (isSelected) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .clickable { selectedIcon = key }
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                                            shape = RoundedCornerShape(12.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select Color", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        colorOptions.forEach { colorHex ->
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(colorHex)))
+                                    .clickable { selectedColor = colorHex }
+                                    .border(
+                                        width = if (selectedColor == colorHex) 2.dp else 0.dp,
+                                        color = Color.White,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedColor == colorHex) {
+                                    Icon(Lucide.Check, null, modifier = Modifier.size(16.dp), tint = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = { if (name.isNotBlank()) onConfirm(name, selectedIcon, selectedColor) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                    ) {
+                        Text("Add", color = MaterialTheme.colorScheme.background)
+                    }
+                }
             }
         }
     }
 }
 
-@Composable
-private fun CategoryPreviewList(categories: List<CategoryEntity>) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.height(200.dp)
-    ) {
-        items(categories, key = { it.id }) { category ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
+private fun getIconByName(name: String?): ImageVector {
+    return when (name) {
+        "ShoppingBag" -> Lucide.ShoppingBag
+        "Utensils" -> Lucide.Utensils
+        "Bus" -> Lucide.Bus
+        "HeartPulse" -> Lucide.HeartPulse
+        "Gamepad2" -> Lucide.Gamepad2
+        "GraduationCap" -> Lucide.GraduationCap
+        "Home" -> Lucide.House
+        "Zap" -> Lucide.Zap
+        "Car" -> Lucide.Car
+        "Smartphone" -> Lucide.Smartphone
+        "Plane" -> Lucide.Plane
+        "Gift" -> Lucide.Gift
+        else -> Lucide.LayoutGrid
     }
 }
 
@@ -586,13 +778,14 @@ private fun DoneScreen(onFinish: () -> Unit) {
             .padding(horizontal = 24.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 ScreenTitle(text = "You are all set")
                 Text(
                     text = "Your budget is ready. Let us track your progress.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
             }
             Image(
