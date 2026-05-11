@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ChevronRight
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
@@ -26,7 +28,8 @@ import java.util.Locale
 fun HomeScreen(
     uiState: HomeViewModel.HomeUiState,
     modifier: Modifier = Modifier,
-    onAddExpense: () -> Unit
+    onAddExpense: () -> Unit,
+    onSeeMoreExpenses: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -62,7 +65,23 @@ fun HomeScreen(
             GoalsPreview(goals = uiState.goals)
         }
         Spacer(modifier = Modifier.height(24.dp))
-        SectionTitle(text = "Quick insights")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionTitle(text = "Quick insights")
+            TextButton(onClick = onSeeMoreExpenses) {
+                Text("See History", color = MaterialTheme.colorScheme.tertiary)
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Lucide.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(12.dp))
         if (uiState.topCategories.isEmpty()) {
             EmptyInsightsState()
@@ -249,6 +268,14 @@ private fun EmptyInsightsState() {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
+}
+
+private fun formatMonthLabel(month: String): String {
+    if (month.isBlank()) return "This month"
+    return runCatching {
+        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+        YearMonth.parse(month).format(formatter)
+    }.getOrDefault(month)
 }
 
 private fun formatAmount(amountMinor: Long): String {

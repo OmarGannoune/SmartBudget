@@ -58,7 +58,6 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
     var showAddExpenseSheet by remember { mutableStateOf(false) }
     
     // We need a ViewModel to provide categories for the global bottom sheet
-    // ExpensesViewModel is suitable as it already fetches categories
     val expensesViewModel: ExpensesViewModel = viewModel(factory = viewModelFactory)
     val expensesUiState by expensesViewModel.expensesUiState.collectAsState()
 
@@ -83,7 +82,8 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 HomeScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
-                    onAddExpense = { showAddExpenseSheet = true }
+                    onAddExpense = { showAddExpenseSheet = true },
+                    onSeeMoreExpenses = { navController.navigate(Routes.Expenses) }
                 )
             }
             composable(Routes.Expenses) {
@@ -169,7 +169,7 @@ private fun CustomBottomBar(
 
     val items = listOf(
         BottomNavItem(Routes.Home, Lucide.House, "Home"),
-        BottomNavItem(Routes.Expenses, Lucide.ReceiptText, "History"),
+        BottomNavItem(Routes.Budgets, Lucide.Wallet, "Budgets"),
         BottomNavItem("add", Lucide.Plus, "Add", isAdd = true),
         BottomNavItem(Routes.Goals, Lucide.Target, "Goals"),
         BottomNavItem(Routes.Settings, Lucide.Settings, "Settings")
