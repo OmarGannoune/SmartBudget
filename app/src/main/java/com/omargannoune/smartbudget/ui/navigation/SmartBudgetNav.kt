@@ -17,15 +17,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.ui.budgets.BudgetsScreen
 import com.omargannoune.smartbudget.ui.budgets.BudgetsViewModel
+import com.omargannoune.smartbudget.ui.expenses.AddExpenseBottomSheet
 import com.omargannoune.smartbudget.ui.expenses.ExpensesScreen
 import com.omargannoune.smartbudget.ui.expenses.ExpensesViewModel
 import com.omargannoune.smartbudget.ui.goals.GoalsScreen
@@ -39,13 +38,11 @@ import com.omargannoune.smartbudget.ui.settings.SettingsViewModel
 
 private object Routes {
     const val Home = "home"
-    const val ExpensesWithAdd = "expenses?openAdd={openAdd}"
+    const val Expenses = "expenses"
     const val Budgets = "budgets"
     const val Goals = "goals"
     const val Settings = "settings"
     const val Recurring = "recurring"
-
-    fun expensesRoute(openAdd: Boolean): String = "expenses?openAdd=$openAdd"
 }
 
 private data class BottomNavItem(
@@ -58,9 +55,21 @@ private data class BottomNavItem(
 @Composable
 fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
     val navController = rememberNavController()
+    var showAddExpenseSheet by remember { mutableStateOf(false) }
+    
+    // We need a ViewModel to provide categories for the global bottom sheet
+    // ExpensesViewModel is suitable as it already fetches categories
+    val expensesViewModel: ExpensesViewModel = viewModel(factory = viewModelFactory)
+    val expensesUiState by expensesViewModel.expensesUiState.collectAsState()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        bottomBar = { CustomBottomBar(navController = navController) },
+        bottomBar = { 
+            CustomBottomBar(
+                navController = navController,
+                onAddClick = { showAddExpenseSheet = true }
+            ) 
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
@@ -74,26 +83,17 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 HomeScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
-                    onAddExpense = { navController.navigate(Routes.expensesRoute(openAdd = true)) }
+                    onAddExpense = { showAddExpenseSheet = true }
                 )
             }
-            composable(
-                route = Routes.ExpensesWithAdd,
-                arguments = listOf(navArgument("openAdd") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                })
-            ) {
-                val openAdd = it.arguments?.getBoolean("openAdd") ?: false
-                val viewModel: ExpensesViewModel = viewModel(factory = viewModelFactory)
-                val uiState by viewModel.expensesUiState.collectAsState()
+            composable(Routes.Expenses) {
+                val uiState by expensesViewModel.expensesUiState.collectAsState()
                 ExpensesScreen(
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
-                    openAdd = openAdd,
-                    onAddExpense = viewModel::createExpense,
-                    onPreviousMonth = viewModel::goToPreviousMonth,
-                    onNextMonth = viewModel::goToNextMonth
+                    onAddExpenseClick = { showAddExpenseSheet = true },
+                    onPreviousMonth = expensesViewModel::goToPreviousMonth,
+                    onNextMonth = expensesViewModel::goToNextMonth
                 )
             }
             composable(Routes.Budgets) {
@@ -145,17 +145,31 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                 )
             }
         }
+
+        if (showAddExpenseSheet) {
+            AddExpenseBottomSheet(
+                categories = expensesUiState.allCategories,
+                onDismiss = { showAddExpenseSheet = false },
+                onSave = { amountMinor, date, categoryId, note, paymentMethod, necessity ->
+                    expensesViewModel.createExpense(amountMinor, date, categoryId, note, paymentMethod, necessity)
+                    showAddExpenseSheet = false
+                }
+            )
+        }
     }
 }
 
 @Composable
-private fun CustomBottomBar(navController: NavHostController) {
+private fun CustomBottomBar(
+    navController: NavHostController,
+    onAddClick: () -> Unit
+) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val items = listOf(
         BottomNavItem(Routes.Home, Lucide.House, "Home"),
-        BottomNavItem(Routes.Budgets, Lucide.Wallet, "Budgets"),
+        BottomNavItem(Routes.Expenses, Lucide.ReceiptText, "History"),
         BottomNavItem("add", Lucide.Plus, "Add", isAdd = true),
         BottomNavItem(Routes.Goals, Lucide.Target, "Goals"),
         BottomNavItem(Routes.Settings, Lucide.Settings, "Settings")
@@ -182,9 +196,7 @@ private fun CustomBottomBar(navController: NavHostController) {
                             .size(64.dp, 52.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.tertiary)
-                            .clickable {
-                                navController.navigate(Routes.expensesRoute(openAdd = true))
-                            },
+                            .clickable { onAddClick() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
