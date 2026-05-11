@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,31 +19,29 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ChevronRight
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
-import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import com.omargannoune.smartbudget.ui.components.SectionTitle
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun HomeScreen(
     uiState: HomeViewModel.HomeUiState,
     modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
-    onSeeMoreExpenses: () -> Unit
+    onSeeMoreExpenses: () -> Unit,
+    onSeeAllGoals: () -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(bottom = 80.dp)
     ) {
-        ScreenTitle(text = "Home")
-        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = uiState.greeting,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(16.dp))
         SummaryCard(
@@ -57,12 +57,30 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
-        SectionTitle(text = "Your goals")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionTitle(text = "Your goals")
+            if (uiState.goals.isNotEmpty()) {
+                TextButton(onClick = onSeeAllGoals) {
+                    Text("See all", color = MaterialTheme.colorScheme.tertiary)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Lucide.ChevronRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(12.dp))
         if (uiState.goals.isEmpty()) {
             EmptyGoalsState()
         } else {
-            GoalsPreview(goals = uiState.goals)
+            GoalsPreview(goals = uiState.goals.take(3))
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(
@@ -208,11 +226,16 @@ private fun TopCategoriesList(categories: List<HomeViewModel.CategorySpend>) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         val catColor = try {
                             Color(android.graphics.Color.parseColor(category.color ?: "#5DE2C6"))
                         } catch (e: Exception) {
@@ -220,32 +243,34 @@ private fun TopCategoriesList(categories: List<HomeViewModel.CategorySpend>) {
                         }
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(catColor.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = getCategoryIcon(category.icon),
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(24.dp),
                                 tint = catColor
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = category.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Column {
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = formatAmount(category.spentMinor),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Text(
-                        text = formatAmount(category.spentMinor),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
                 }
             }
         }
@@ -268,14 +293,6 @@ private fun EmptyInsightsState() {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-}
-
-private fun formatMonthLabel(month: String): String {
-    if (month.isBlank()) return "This month"
-    return runCatching {
-        val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
-        YearMonth.parse(month).format(formatter)
-    }.getOrDefault(month)
 }
 
 private fun formatAmount(amountMinor: Long): String {

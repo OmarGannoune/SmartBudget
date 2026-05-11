@@ -83,7 +83,8 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     uiState = uiState,
                     modifier = Modifier.padding(innerPadding),
                     onAddExpense = { showAddExpenseSheet = true },
-                    onSeeMoreExpenses = { navController.navigate(Routes.Expenses) }
+                    onSeeMoreExpenses = { navController.navigate(Routes.Expenses) },
+                    onSeeAllGoals = { navController.navigate(Routes.Goals) }
                 )
             }
             composable(Routes.Expenses) {
