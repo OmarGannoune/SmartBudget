@@ -71,8 +71,9 @@ class HomeViewModel(
             remainingMinor = monthlyBudget?.totalLimitMinor?.minus(totalSpent),
             topCategories = topCategories,
             goals = activeGoals,
-            greeting = greetingForTime(),
-            currency = profile.currency
+            greeting = greetingForTime(profile.name),
+            currency = profile.currency,
+            userName = profile.name
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -84,7 +85,8 @@ class HomeViewModel(
         val topCategories: List<CategorySpend> = emptyList(),
         val goals: List<SavingsGoalEntity> = emptyList(),
         val greeting: String = "",
-        val currency: String = "MAD"
+        val currency: String = "MAD",
+        val userName: String = ""
     )
 
     data class CategorySpend(
@@ -114,12 +116,13 @@ class HomeViewModel(
             .take(3)
     }
 
-    private fun greetingForTime(): String {
+    private fun greetingForTime(name: String = ""): String {
         val hour = LocalTime.now().hour
-        return when {
+        val greeting = when {
             hour < 12 -> "Good morning"
             hour < 18 -> "Good afternoon"
             else -> "Good evening"
         }
+        return if (name.isNotEmpty()) "$greeting, $name" else greeting
     }
 }

@@ -32,6 +32,7 @@ class SettingsViewModel(
         SettingsUiState(
             categories = categories,
             currency = profile.currency,
+            userName = profile.name,
             exportMessage = message,
             exportFilePath = filePath
         )
@@ -40,6 +41,7 @@ class SettingsViewModel(
     data class SettingsUiState(
         val categories: List<CategoryEntity> = emptyList(),
         val currency: String = "MAD",
+        val userName: String = "",
         val exportMessage: String? = null,
         val exportFilePath: String? = null
     )
@@ -53,6 +55,13 @@ class SettingsViewModel(
     fun updateCurrency(currency: String) {
         viewModelScope.launch {
             onboardingRepository.updateCurrency(currency)
+        }
+    }
+
+    fun updateName(name: String) {
+        viewModelScope.launch {
+            val profile = onboardingRepository.observeProfile().first()
+            onboardingRepository.saveProfile(name, profile.currency)
         }
     }
 

@@ -102,7 +102,10 @@ fun OnboardingNav(
                     viewModel.saveProfile()
                     navController.navigate(OnboardingRoutes.Goals)
                 },
-                onSkip = { navController.navigate(OnboardingRoutes.Goals) }
+                onSkip = {
+                    viewModel.saveProfile()
+                    navController.navigate(OnboardingRoutes.Goals)
+                }
             )
         }
         composable(OnboardingRoutes.Goals) {

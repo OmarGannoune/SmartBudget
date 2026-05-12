@@ -37,6 +37,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onClearData: () -> Unit,
     onUpdateCurrency: (String) -> Unit,
+    onUpdateName: (String) -> Unit,
     onExportCsv: (android.content.Context) -> Unit,
     onCreateCategory: (String, String?, String?) -> Unit,
     onRenameCategory: (CategoryEntity, String, String?, String?) -> Unit,
@@ -47,6 +48,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
+    var showNameEditor by remember { mutableStateOf(false) }
     var showManageCategories by remember { mutableStateOf(false) }
     var showAddCategory by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
@@ -65,6 +67,17 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
+            item {
+                SettingsSection(title = "PROFILE") {
+                    SettingsItem(
+                        icon = Lucide.User,
+                        title = "Name",
+                        value = uiState.userName,
+                        onClick = { showNameEditor = true }
+                    )
+                }
+            }
+
             item {
                 SettingsSection(title = "CATEGORIES") {
                     SettingsItem(
@@ -175,6 +188,17 @@ fun SettingsScreen(
             current = uiState.currency,
             onDismiss = { showCurrencyPicker = false },
             onSelect = { onUpdateCurrency(it); showCurrencyPicker = false }
+        )
+    }
+
+    if (showNameEditor) {
+        NameEditorDialog(
+            currentName = uiState.userName,
+            onDismiss = { showNameEditor = false },
+            onSave = { newName -> 
+                onUpdateName(newName)
+                showNameEditor = false
+            }
         )
     }
 
@@ -304,6 +328,59 @@ private fun CurrencyPickerDialog(
             }
         },
         confirmButton = {}
+    )
+}
+
+@Composable
+private fun NameEditorDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Name") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { 
+                        name = it
+                        nameError = null
+                    },
+                    label = { Text("Your name") },
+                    placeholder = { Text("Enter your name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    isError = nameError != null,
+                    singleLine = true
+                )
+                if (nameError != null) {
+                    Text(
+                        text = nameError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.trim().isEmpty()) {
+                        nameError = "Name cannot be empty"
+                    } else {
+                        onSave(name.trim())
+                    }
+                }
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
     )
 }
 
