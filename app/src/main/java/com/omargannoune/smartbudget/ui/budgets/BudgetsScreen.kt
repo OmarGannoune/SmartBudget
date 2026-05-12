@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import com.omargannoune.smartbudget.ui.components.SectionTitle
+import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -54,6 +55,7 @@ fun BudgetsScreen(
             limitMinor = uiState.monthlyBudget?.totalLimitMinor,
             spentMinor = uiState.totalSpentMinor,
             remainingMinor = uiState.totalRemainingMinor,
+            currency = uiState.currency,
             onEdit = { showMonthlyDialog = true }
         )
         Spacer(modifier = Modifier.height(24.dp))
@@ -64,6 +66,7 @@ fun BudgetsScreen(
         } else {
             CategoryBudgetList(
                 statuses = uiState.categoryStatuses,
+                currency = uiState.currency,
                 onEdit = { editingCategory = it }
             )
         }
@@ -99,6 +102,7 @@ private fun MonthlyBudgetCard(
     limitMinor: Long?,
     spentMinor: Long,
     remainingMinor: Long?,
+    currency: String = "MAD",
     onEdit: () -> Unit
 ) {
     Card(
@@ -124,7 +128,7 @@ private fun MonthlyBudgetCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = limitMinor?.let { formatAmount(it) } ?: "No budget set",
+                text = limitMinor?.let { formatAmount(it, currency) } ?: "No budget set",
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
@@ -140,12 +144,12 @@ private fun MonthlyBudgetCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
-                        text = "Spent: ${formatAmount(spentMinor)}",
+                        text = "Spent: ${formatAmount(spentMinor, currency)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Remaining: ${remainingMinor?.let { formatAmount(it) } ?: "0.00 MAD"}",
+                        text = "Remaining: ${remainingMinor?.let { formatAmount(it, currency) } ?: "0.00 $currency"}",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = if ((remainingMinor ?: 0L) < 0L) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
@@ -159,6 +163,7 @@ private fun MonthlyBudgetCard(
 @Composable
 private fun CategoryBudgetList(
     statuses: List<BudgetsViewModel.CategoryBudgetStatus>,
+    currency: String = "MAD",
     onEdit: (CategoryEntity) -> Unit
 ) {
     LazyColumn(
@@ -172,6 +177,7 @@ private fun CategoryBudgetList(
                 spentMinor = status.spentMinor,
                 remainingMinor = status.remainingMinor,
                 isOverspent = status.isOverspent,
+                currency = currency,
                 onEdit = { onEdit(status.category) }
             )
         }
@@ -185,6 +191,7 @@ private fun CategoryBudgetRow(
     spentMinor: Long,
     remainingMinor: Long?,
     isOverspent: Boolean,
+    currency: String = "MAD",
     onEdit: () -> Unit
 ) {
     Card(
@@ -243,12 +250,12 @@ private fun CategoryBudgetRow(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
-                        text = "Spent ${formatAmount(spentMinor)} / ${formatAmount(limitMinor)}",
+                        text = "Spent ${formatAmount(spentMinor, currency)} / ${formatAmount(limitMinor, currency)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = if (isOverspent) "Over by ${formatAmount(kotlin.math.abs(remainingMinor ?: 0L))}" else "${remainingMinor?.let { formatAmount(it) }} left",
+                        text = if (isOverspent) "Over by ${formatAmount(kotlin.math.abs(remainingMinor ?: 0L), currency)}" else "${remainingMinor?.let { formatAmount(it, currency) }} left",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isOverspent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary

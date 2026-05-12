@@ -18,6 +18,7 @@ import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryColor
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.time.YearMonth
@@ -45,7 +46,7 @@ fun ExpensesScreen(
             onNextMonth = onNextMonth
         )
         Spacer(modifier = Modifier.height(16.dp))
-        TotalSpentCard(totalMinor = uiState.totalMinor)
+        TotalSpentCard(totalMinor = uiState.totalMinor, currency = uiState.currency)
         Spacer(modifier = Modifier.height(20.dp))
         PrimaryButton(
             text = "Add expense",
@@ -58,7 +59,8 @@ fun ExpensesScreen(
         } else {
             ExpensesList(
                 expenses = uiState.expenses,
-                categories = uiState.allCategories
+                categories = uiState.allCategories,
+                currency = uiState.currency
             )
         }
     }
@@ -93,7 +95,7 @@ private fun MonthHeader(
 }
 
 @Composable
-private fun TotalSpentCard(totalMinor: Long) {
+private fun TotalSpentCard(totalMinor: Long, currency: String = "MAD") {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -102,7 +104,7 @@ private fun TotalSpentCard(totalMinor: Long) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text("Total Spent", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                text = formatAmount(totalMinor),
+                text = formatAmount(totalMinor, currency),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -112,20 +114,20 @@ private fun TotalSpentCard(totalMinor: Long) {
 }
 
 @Composable
-private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>) {
+private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>, currency: String = "MAD") {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         items(expenses, key = { it.id }) { expense ->
             val category = categories.find { it.id == expense.categoryId }
-            ExpenseRow(expense = expense, category = category)
+            ExpenseRow(expense = expense, category = category, currency = currency)
         }
     }
 }
 
 @Composable
-private fun ExpenseRow(expense: ExpenseEntity, category: CategoryEntity?) {
+private fun ExpenseRow(expense: ExpenseEntity, category: CategoryEntity?, currency: String = "MAD") {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -161,7 +163,7 @@ private fun ExpenseRow(expense: ExpenseEntity, category: CategoryEntity?) {
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(formatAmount(expense.amountMinor), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(formatAmount(expense.amountMinor, currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(expense.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -186,10 +188,4 @@ private fun formatMonthLabel(month: String): String {
         val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
         YearMonth.parse(month).format(formatter)
     }.getOrDefault(month)
-}
-
-private fun formatAmount(amountMinor: Long): String {
-    val major = amountMinor / 100
-    val minor = kotlin.math.abs(amountMinor % 100)
-    return "$major.${minor.toString().padStart(2, '0')} MAD"
 }

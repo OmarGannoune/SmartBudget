@@ -6,6 +6,7 @@ import com.omargannoune.smartbudget.data.local.DateFormats
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.CategoryMonthlyBudgetEntity
 import com.omargannoune.smartbudget.data.local.entity.MonthlyBudgetEntity
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.BudgetRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
@@ -22,7 +23,8 @@ import java.time.format.DateTimeFormatter
 class BudgetsViewModel(
     private val budgetRepository: BudgetRepository,
     categoryRepository: CategoryRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
     private val currentMonth = LocalDate.now().format(monthFormatter)
@@ -52,8 +54,11 @@ class BudgetsViewModel(
         categoryBudgetsFlow,
         categoriesFlow,
         totalSpentFlow,
-        categorySpentFlow
-    ) { monthlyBudget, categoryBudgets, categories, totalSpent, categorySpent ->
+        combine(categorySpentFlow, onboardingRepository.observeProfile()) { spent, profile ->
+            spent to profile
+        }
+    ) { monthlyBudget, categoryBudgets, categories, totalSpent, spentAndProfile ->
+        val (categorySpent, profile) = spentAndProfile
         val budgetMap = categoryBudgets.associateBy { it.categoryId }
         val statuses = categories.map { category ->
             val limit = budgetMap[category.id]?.limitMinor
@@ -64,7 +69,7 @@ class BudgetsViewModel(
                 limitMinor = limit,
                 spentMinor = spent,
                 remainingMinor = remaining,
-                isOverspent = limit != null && spent > limit
+                isOverspent = limit != null && spent > (limit ?: 0L)
             )
         }
         BudgetsUiState(
@@ -74,7 +79,8 @@ class BudgetsViewModel(
             totalRemainingMinor = monthlyBudget?.totalLimitMinor?.minus(totalSpent),
             categoryBudgets = categoryBudgets,
             categories = categories,
-            categoryStatuses = statuses
+            categoryStatuses = statuses,
+            currency = profile.currency
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetsUiState())
 
@@ -85,7 +91,8 @@ class BudgetsViewModel(
         val totalRemainingMinor: Long? = null,
         val categoryBudgets: List<CategoryMonthlyBudgetEntity> = emptyList(),
         val categories: List<CategoryEntity> = emptyList(),
-        val categoryStatuses: List<CategoryBudgetStatus> = emptyList()
+        val categoryStatuses: List<CategoryBudgetStatus> = emptyList(),
+        val currency: String = "MAD"
     )
 
     data class CategoryBudgetStatus(

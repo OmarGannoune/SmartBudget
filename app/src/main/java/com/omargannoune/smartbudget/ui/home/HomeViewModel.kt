@@ -6,6 +6,7 @@ import com.omargannoune.smartbudget.data.local.DateFormats
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.MonthlyBudgetEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.BudgetRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
@@ -24,7 +25,8 @@ class HomeViewModel(
     private val expenseRepository: ExpenseRepository,
     private val budgetRepository: BudgetRepository,
     private val categoryRepository: CategoryRepository,
-    private val savingsRepository: SavingsRepository
+    private val savingsRepository: SavingsRepository,
+    private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
     private val currentMonth = LocalDate.now().format(monthFormatter)
@@ -55,8 +57,11 @@ class HomeViewModel(
         totalSpentFlow,
         monthlyBudgetFlow,
         goalsFlow,
-        categorySpentFlow
-    ) { categories, totalSpent, monthlyBudget, goals, categorySpent ->
+        combine(categorySpentFlow, onboardingRepository.observeProfile()) { spent, profile ->
+            spent to profile
+        }
+    ) { categories, totalSpent, monthlyBudget, goals, spentAndProfile ->
+        val (categorySpent, profile) = spentAndProfile
         val topCategories = buildTopCategories(categories, categorySpent)
         val activeGoals = goals.filter { !it.isCompleted }.take(3)
         HomeUiState(
@@ -66,7 +71,8 @@ class HomeViewModel(
             remainingMinor = monthlyBudget?.totalLimitMinor?.minus(totalSpent),
             topCategories = topCategories,
             goals = activeGoals,
-            greeting = greetingForTime()
+            greeting = greetingForTime(),
+            currency = profile.currency
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -77,7 +83,8 @@ class HomeViewModel(
         val remainingMinor: Long? = null,
         val topCategories: List<CategorySpend> = emptyList(),
         val goals: List<SavingsGoalEntity> = emptyList(),
-        val greeting: String = ""
+        val greeting: String = "",
+        val currency: String = "MAD"
     )
 
     data class CategorySpend(

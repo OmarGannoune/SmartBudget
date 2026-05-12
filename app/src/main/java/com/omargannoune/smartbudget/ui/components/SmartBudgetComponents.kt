@@ -124,3 +124,9 @@ object CategoryDefaults {
         "#9C27B0", "#2196F3", "#009688", "#E91E63"
     )
 }
+
+fun formatAmount(amountMinor: Long, currency: String = "MAD"): String {
+    val major = amountMinor / 100
+    val minor = kotlin.math.abs(amountMinor % 100)
+    return "$major.${minor.toString().padStart(2, '0')} $currency"
+}

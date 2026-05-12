@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.DateFormats
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
 import kotlinx.coroutines.launch
@@ -21,7 +22,8 @@ import java.time.format.DateTimeFormatter
 
 class ExpensesViewModel(
     private val expenseRepository: ExpenseRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
     private val monthFormatter = DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN)
 
@@ -32,14 +34,16 @@ class ExpensesViewModel(
             combine(
                 expenseRepository.observeExpensesForMonth(month),
                 expenseRepository.observeTotalForMonth(month),
-                categoryRepository.observeAllCategories()
-            ) { expenses, total, categories ->
+                categoryRepository.observeAllCategories(),
+                onboardingRepository.observeProfile()
+            ) { expenses, total, categories, profile ->
                 ExpensesUiState(
                     month = month,
                     totalMinor = total,
                     expenses = expenses,
                     allCategories = categories,
-                    activeCategories = categories.filter { it.isActive }
+                    activeCategories = categories.filter { it.isActive },
+                    currency = profile.currency
                 )
             }
         }
@@ -50,7 +54,8 @@ class ExpensesViewModel(
         val totalMinor: Long = 0L,
         val expenses: List<ExpenseEntity> = emptyList(),
         val allCategories: List<CategoryEntity> = emptyList(),
-        val activeCategories: List<CategoryEntity> = emptyList()
+        val activeCategories: List<CategoryEntity> = emptyList(),
+        val currency: String = "MAD"
     )
 
     fun createExpense(
@@ -65,7 +70,7 @@ class ExpensesViewModel(
             expenseRepository.createExpense(
                 ExpenseEntity(
                     amountMinor = amountMinor,
-                    currency = "MAD",
+                    currency = expensesUiState.value.currency,
                     date = date,
                     categoryId = categoryId,
                     note = note,

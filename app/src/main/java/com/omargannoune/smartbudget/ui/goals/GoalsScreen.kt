@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.formatAmount
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -73,6 +74,7 @@ fun GoalsScreen(
         } else {
             GoalsList(
                 goals = uiState.goals,
+                currency = uiState.currency,
                 onAddContribution = { selectedGoalId = it },
                 onEdit = { editingGoal = it },
                 onDelete = { goalToDelete = it }
@@ -127,6 +129,7 @@ fun GoalsScreen(
 @Composable
 private fun GoalsList(
     goals: List<SavingsGoalEntity>,
+    currency: String = "MAD",
     onAddContribution: (Long) -> Unit,
     onEdit: (SavingsGoalEntity) -> Unit,
     onDelete: (SavingsGoalEntity) -> Unit
@@ -135,6 +138,7 @@ private fun GoalsList(
         items(goals, key = { it.id }) { goal ->
             GoalCard(
                 goal = goal,
+                currency = currency,
                 onAddContribution = onAddContribution,
                 onEdit = onEdit,
                 onDelete = onDelete
@@ -146,6 +150,7 @@ private fun GoalsList(
 @Composable
 private fun GoalCard(
     goal: SavingsGoalEntity,
+    currency: String = "MAD",
     onAddContribution: (Long) -> Unit,
     onEdit: (SavingsGoalEntity) -> Unit,
     onDelete: (SavingsGoalEntity) -> Unit
@@ -202,19 +207,19 @@ private fun GoalCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Saved: ${formatAmount(goal.currentAmountMinor)}",
+                    text = "Saved: ${formatAmount(goal.currentAmountMinor, currency)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Target: ${formatAmount(goal.targetAmountMinor)}",
+                    text = "Target: ${formatAmount(goal.targetAmountMinor, currency)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Remaining: ${formatAmount(remaining)}",
+                text = "Remaining: ${formatAmount(remaining, currency)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (goal.isCompleted) {
                     MaterialTheme.colorScheme.tertiary
@@ -381,12 +386,6 @@ private fun AddContributionDialog(
             }
         }
     )
-}
-
-private fun formatAmount(amountMinor: Long): String {
-    val major = amountMinor / 100
-    val minor = kotlin.math.abs(amountMinor % 100)
-    return "$major.${minor.toString().padStart(2, '0')} MAD"
 }
 
 private fun parseAmountToMinor(amountText: String): Long? {

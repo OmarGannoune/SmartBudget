@@ -20,19 +20,22 @@ object AppViewModelProvider {
                     modelClass.isAssignableFrom(ExpensesViewModel::class.java) -> {
                         ExpensesViewModel(
                             expenseRepository = app.container.expenseRepository,
-                            categoryRepository = app.container.categoryRepository
+                            categoryRepository = app.container.categoryRepository,
+                            onboardingRepository = app.container.onboardingRepository
                         ) as T
                     }
                     modelClass.isAssignableFrom(BudgetsViewModel::class.java) -> {
                         BudgetsViewModel(
                             budgetRepository = app.container.budgetRepository,
                             categoryRepository = app.container.categoryRepository,
-                            expenseRepository = app.container.expenseRepository
+                            expenseRepository = app.container.expenseRepository,
+                            onboardingRepository = app.container.onboardingRepository
                         ) as T
                     }
                     modelClass.isAssignableFrom(GoalsViewModel::class.java) -> {
                         GoalsViewModel(
-                            savingsRepository = app.container.savingsRepository
+                            savingsRepository = app.container.savingsRepository,
+                            onboardingRepository = app.container.onboardingRepository
                         ) as T
                     }
                     modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
@@ -61,7 +64,8 @@ object AppViewModelProvider {
                             expenseRepository = app.container.expenseRepository,
                             budgetRepository = app.container.budgetRepository,
                             categoryRepository = app.container.categoryRepository,
-                            savingsRepository = app.container.savingsRepository
+                            savingsRepository = app.container.savingsRepository,
+                            onboardingRepository = app.container.onboardingRepository
                         ) as T
                     }
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

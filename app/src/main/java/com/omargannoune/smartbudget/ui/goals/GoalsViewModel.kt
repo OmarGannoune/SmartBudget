@@ -4,23 +4,30 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.entity.SavingsContributionEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
+import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.SavingsRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class GoalsViewModel(
-    private val savingsRepository: SavingsRepository
+    private val savingsRepository: SavingsRepository,
+    private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
-    val goalsUiState: StateFlow<GoalsUiState> = savingsRepository.observeGoals()
-        .map { goals -> GoalsUiState(goals = goals) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GoalsUiState())
+    val goalsUiState: StateFlow<GoalsUiState> = combine(
+        savingsRepository.observeGoals(),
+        onboardingRepository.observeProfile()
+    ) { goals, profile -> 
+        GoalsUiState(goals = goals, currency = profile.currency) 
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GoalsUiState())
 
     data class GoalsUiState(
-        val goals: List<SavingsGoalEntity> = emptyList()
+        val goals: List<SavingsGoalEntity> = emptyList(),
+        val currency: String = "MAD"
     )
 
     fun createGoal(name: String, targetAmountMinor: Long, targetDate: String?) {

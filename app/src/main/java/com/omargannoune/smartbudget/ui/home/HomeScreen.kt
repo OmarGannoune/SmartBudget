@@ -1,5 +1,6 @@
 package com.omargannoune.smartbudget.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,13 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ChevronRight
+import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.SectionTitle
+import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 
 @Composable
@@ -48,7 +53,8 @@ fun HomeScreen(
             month = uiState.month,
             totalSpentMinor = uiState.totalSpentMinor,
             budgetLimitMinor = uiState.monthlyBudget?.totalLimitMinor,
-            remainingMinor = uiState.remainingMinor
+            remainingMinor = uiState.remainingMinor,
+            currency = uiState.currency
         )
         Spacer(modifier = Modifier.height(16.dp))
         PrimaryButton(
@@ -80,7 +86,7 @@ fun HomeScreen(
         if (uiState.goals.isEmpty()) {
             EmptyGoalsState()
         } else {
-            GoalsPreview(goals = uiState.goals.take(3))
+            GoalsPreview(goals = uiState.goals.take(3), currency = uiState.currency)
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(
@@ -104,7 +110,7 @@ fun HomeScreen(
         if (uiState.topCategories.isEmpty()) {
             EmptyInsightsState()
         } else {
-            TopCategoriesList(categories = uiState.topCategories)
+            TopCategoriesList(categories = uiState.topCategories, currency = uiState.currency)
         }
     }
 }
@@ -114,7 +120,8 @@ private fun SummaryCard(
     month: String,
     totalSpentMinor: Long,
     budgetLimitMinor: Long?,
-    remainingMinor: Long?
+    remainingMinor: Long?,
+    currency: String = "MAD"
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -129,7 +136,7 @@ private fun SummaryCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = formatAmount(totalSpentMinor),
+                text = formatAmount(totalSpentMinor, currency),
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
@@ -171,16 +178,16 @@ private fun SummaryCard(
 }
 
 @Composable
-private fun GoalsPreview(goals: List<SavingsGoalEntity>) {
+private fun GoalsPreview(goals: List<SavingsGoalEntity>, currency: String = "MAD") {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         goals.forEach { goal ->
-            GoalPreviewCard(goal = goal)
+            GoalPreviewCard(goal = goal, currency = currency)
         }
     }
 }
 
 @Composable
-private fun GoalPreviewCard(goal: SavingsGoalEntity) {
+private fun GoalPreviewCard(goal: SavingsGoalEntity, currency: String = "MAD") {
     val progress = if (goal.targetAmountMinor > 0L) {
         (goal.currentAmountMinor.toFloat() / goal.targetAmountMinor).coerceIn(0f, 1f)
     } else {
@@ -200,7 +207,7 @@ private fun GoalPreviewCard(goal: SavingsGoalEntity) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = formatAmount(goal.targetAmountMinor),
+                    text = formatAmount(goal.targetAmountMinor, currency),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -217,7 +224,7 @@ private fun GoalPreviewCard(goal: SavingsGoalEntity) {
 }
 
 @Composable
-private fun TopCategoriesList(categories: List<HomeViewModel.CategorySpend>) {
+private fun TopCategoriesList(categories: List<HomeViewModel.CategorySpend>, currency: String = "MAD") {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         categories.forEach { category ->
             Card(
@@ -265,7 +272,7 @@ private fun TopCategoriesList(categories: List<HomeViewModel.CategorySpend>) {
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = formatAmount(category.spentMinor),
+                                text = formatAmount(category.spentMinor, currency),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -293,10 +300,4 @@ private fun EmptyInsightsState() {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-}
-
-private fun formatAmount(amountMinor: Long): String {
-    val major = amountMinor / 100
-    val minor = kotlin.math.abs(amountMinor % 100)
-    return "$major.${minor.toString().padStart(2, '0')} MAD"
 }
