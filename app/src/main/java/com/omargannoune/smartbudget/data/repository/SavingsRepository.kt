@@ -11,5 +11,6 @@ interface SavingsRepository {
     suspend fun createGoal(goal: SavingsGoalEntity)
     suspend fun updateGoal(goal: SavingsGoalEntity)
     suspend fun deleteGoal(goalId: Long)
+    suspend fun deleteAllGoals()
     suspend fun addContribution(contribution: SavingsContributionEntity)
 }

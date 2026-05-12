@@ -25,6 +25,9 @@ interface SavingsGoalDao {
     @Query("DELETE FROM savings_goals WHERE id = :goalId")
     suspend fun deleteGoal(goalId: Long)
 
+    @Query("DELETE FROM savings_goals")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM savings_contributions WHERE goalId = :goalId ORDER BY date DESC")
     fun observeContributions(goalId: Long): Flow<List<SavingsContributionEntity>>
 

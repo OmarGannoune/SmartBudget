@@ -10,4 +10,6 @@ interface BudgetRepository {
     suspend fun upsertMonthlyBudget(budget: MonthlyBudgetEntity)
     suspend fun upsertCategoryBudget(budget: CategoryMonthlyBudgetEntity)
     suspend fun deleteCategoryBudget(month: String, categoryId: Long)
+    suspend fun deleteAllMonthlyBudgets()
+    suspend fun deleteAllCategoryBudgets()
 }

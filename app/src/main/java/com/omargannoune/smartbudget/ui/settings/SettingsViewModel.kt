@@ -57,25 +57,20 @@ class SettingsViewModel(
     )
 
     fun clearAllData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Delete all expenses
-                val allExpenses = expenseRepository.getAllExpenses()
-                allExpenses.forEach { expense ->
-                    expenseRepository.deleteExpense(expense.id)
-                }
+                // Delete all expenses at once (much faster than looping)
+                expenseRepository.deleteAllExpenses()
                 
-                // Delete all recurring rules
-                val allRules = recurringRepository.observeAllRules().first()
-                allRules.forEach { rule ->
-                    recurringRepository.deleteRule(rule.id)
-                }
+                // Delete all recurring rules at once
+                recurringRepository.deleteAllRules()
                 
-                // Delete all savings goals
-                val allGoals = savingsRepository.observeGoals().first()
-                allGoals.forEach { goal ->
-                    savingsRepository.deleteGoal(goal.id)
-                }
+                // Delete all savings goals at once
+                savingsRepository.deleteAllGoals()
+
+                // Delete all budget data so onboarding can insert fresh values
+                budgetRepository.deleteAllCategoryBudgets()
+                budgetRepository.deleteAllMonthlyBudgets()
                 
                 // Delete only non-default categories (user-added ones)
                 val allCategories = categoryRepository.observeAllCategories().first()
@@ -85,18 +80,23 @@ class SettingsViewModel(
                     }
                 }
                 
+                // Ensure default categories are recreated with icons/colors BEFORE resetting onboarding
+                categoryRepository.ensureDefaultCategories()
+                
                 // Reset profile (name and currency)
                 onboardingRepository.saveProfile("", "MAD")
-                
-                // Ensure default categories are recreated with icons/colors
-                categoryRepository.ensureDefaultCategories()
                 
                 // Reset onboarding to false so user goes back to onboarding flow
                 onboardingRepository.setOnboardingComplete(false)
                 
-                exportMessage.value = "All data cleared successfully"
+                // Switch back to main thread for UI updates
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    exportMessage.value = "All data cleared successfully"
+                }
             } catch (e: Exception) {
-                exportMessage.value = "Error clearing data: ${e.message}"
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    exportMessage.value = "Error clearing data: ${e.message}"
+                }
             }
         }
     }

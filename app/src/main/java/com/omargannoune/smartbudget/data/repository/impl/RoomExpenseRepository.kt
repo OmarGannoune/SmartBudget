@@ -44,4 +44,10 @@ class RoomExpenseRepository(
             expenseDao.deleteById(expenseId)
         }
     }
+
+    override suspend fun deleteAllExpenses() {
+        withContext(Dispatchers.IO) {
+            expenseDao.deleteAll()
+        }
+    }
 }

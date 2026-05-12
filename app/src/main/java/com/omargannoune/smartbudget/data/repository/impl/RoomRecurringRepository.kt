@@ -43,6 +43,12 @@ class RoomRecurringRepository(
         }
     }
 
+    override suspend fun deleteAllRules() {
+        withContext(Dispatchers.IO) {
+            recurringRuleDao.deleteAll()
+        }
+    }
+
     override suspend fun generateDueExpenses(): Int {
         return withContext(Dispatchers.IO) {
             val formatter = DateTimeFormatter.ofPattern(DateFormats.DATE_PATTERN)

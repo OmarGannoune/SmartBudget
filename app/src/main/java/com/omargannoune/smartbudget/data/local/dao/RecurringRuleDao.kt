@@ -26,4 +26,7 @@ interface RecurringRuleDao {
 
     @Query("DELETE FROM recurring_rules WHERE id = :ruleId")
     suspend fun delete(ruleId: Long)
+
+    @Query("DELETE FROM recurring_rules")
+    suspend fun deleteAll()
 }

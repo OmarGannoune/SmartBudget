@@ -56,4 +56,16 @@ class RoomBudgetRepository(
             budgetDao.deleteCategoryBudget(month, categoryId)
         }
     }
+
+    override suspend fun deleteAllMonthlyBudgets() {
+        withContext(Dispatchers.IO) {
+            budgetDao.deleteAllMonthlyBudgets()
+        }
+    }
+
+    override suspend fun deleteAllCategoryBudgets() {
+        withContext(Dispatchers.IO) {
+            budgetDao.deleteAllCategoryBudgets()
+        }
+    }
 }

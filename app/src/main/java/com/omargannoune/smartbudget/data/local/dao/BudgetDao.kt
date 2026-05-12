@@ -30,4 +30,10 @@ interface BudgetDao {
 
     @Query("DELETE FROM category_monthly_budgets WHERE month = :month AND categoryId = :categoryId")
     suspend fun deleteCategoryBudget(month: String, categoryId: Long)
+
+    @Query("DELETE FROM monthly_budgets")
+    suspend fun deleteAllMonthlyBudgets()
+
+    @Query("DELETE FROM category_monthly_budgets")
+    suspend fun deleteAllCategoryBudgets()
 }

@@ -53,6 +53,7 @@ import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import com.omargannoune.smartbudget.ui.components.getCategoryColor
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -1130,6 +1131,7 @@ private fun BudgetSetupScreen(
     var amountText by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
     var categoryBudgets by remember { mutableStateOf(categories.associate { it.id to "" }) }
+    val scope = rememberCoroutineScope()
 
     OnboardingScreenContainer(
         title = "Set your monthly budget",
@@ -1140,13 +1142,17 @@ private fun BudgetSetupScreen(
             if (amountMinor == null || amountMinor <= 0L) {
                 amountError = "Enter a valid amount"
             } else {
-                onSaveBudget(amountMinor)
                 // Save category budgets
                 val categoryBudgetMap = categoryBudgets.mapValues { (_, value) ->
                     parseAmountToMinor(value) ?: 0L
                 }
-                onSaveCategoryBudgets(categoryBudgetMap)
-                onContinue()
+                scope.launch {
+                    onSaveBudget(amountMinor)
+                    onSaveCategoryBudgets(categoryBudgetMap)
+                    // Ensure data is saved before navigating
+                    kotlinx.coroutines.delay(150)
+                    onContinue()
+                }
             }
         },
         primaryText = "Continue",

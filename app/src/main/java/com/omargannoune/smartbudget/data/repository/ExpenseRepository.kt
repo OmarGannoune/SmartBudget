@@ -11,4 +11,5 @@ interface ExpenseRepository {
     suspend fun createExpense(expense: ExpenseEntity)
     suspend fun updateExpense(expense: ExpenseEntity)
     suspend fun deleteExpense(expenseId: Long)
+    suspend fun deleteAllExpenses()
 }

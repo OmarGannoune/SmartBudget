@@ -40,6 +40,12 @@ class RoomSavingsRepository(
         }
     }
 
+    override suspend fun deleteAllGoals() {
+        withContext(Dispatchers.IO) {
+            savingsGoalDao.deleteAll()
+        }
+    }
+
     override suspend fun addContribution(contribution: SavingsContributionEntity) {
         withContext(Dispatchers.IO) {
             val now = timeProvider.nowMillis()
