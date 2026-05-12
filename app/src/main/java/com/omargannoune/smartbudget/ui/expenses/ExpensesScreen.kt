@@ -18,6 +18,7 @@ import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
+import com.omargannoune.smartbudget.ui.components.ExpenseRowComponent
 import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryColor
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
@@ -121,51 +122,13 @@ private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<Categor
     ) {
         items(expenses, key = { it.id }) { expense ->
             val category = categories.find { it.id == expense.categoryId }
-            ExpenseRow(expense = expense, category = category, currency = currency)
-        }
-    }
-}
-
-@Composable
-private fun ExpenseRow(expense: ExpenseEntity, category: CategoryEntity?, currency: String = "MAD") {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                val catColor = getCategoryColor(category?.color)
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(catColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = getCategoryIcon(category?.icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = catColor
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(category?.name ?: "Unknown", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                    if (!expense.note.isNullOrBlank()) {
-                        Text(expense.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                    }
-                }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(formatAmount(expense.amountMinor, currency), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(expense.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            ExpenseRowComponent(
+                expense = expense,
+                categoryName = category?.name ?: "Unknown",
+                categoryIcon = category?.icon,
+                categoryColorHex = category?.color,
+                currency = currency
+            )
         }
     }
 }

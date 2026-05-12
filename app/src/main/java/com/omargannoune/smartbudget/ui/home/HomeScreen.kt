@@ -22,11 +22,14 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ChevronRight
 import com.omargannoune.smartbudget.R
+import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
+import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.SectionTitle
 import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
+import com.omargannoune.smartbudget.ui.components.ExpenseRowComponent
 
 @Composable
 fun HomeScreen(
@@ -105,9 +108,9 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionTitle(text = "Quick insights")
+            SectionTitle(text = "Recent expenses")
             TextButton(onClick = onSeeMoreExpenses) {
-                Text("See History", color = MaterialTheme.colorScheme.tertiary)
+                Text("See all", color = MaterialTheme.colorScheme.tertiary)
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Lucide.ChevronRight,
@@ -116,6 +119,24 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.tertiary
                 )
             }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        if (uiState.recentExpenses.isEmpty()) {
+            EmptyInsightsState()
+        } else {
+            RecentExpensesList(
+                expenses = uiState.recentExpenses,
+                categories = uiState.categories,
+                currency = uiState.currency
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionTitle(text = "Quick insights")
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (uiState.topCategories.isEmpty()) {
@@ -308,8 +329,24 @@ private fun EmptyGoalsState() {
 @Composable
 private fun EmptyInsightsState() {
     Text(
-        text = "No expenses to show insights.",
+        text = "No expenses to show.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
+}
+
+@Composable
+private fun RecentExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>, currency: String = "MAD") {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        expenses.forEach { expense ->
+            val category = categories.find { it.id == expense.categoryId }
+            ExpenseRowComponent(
+                expense = expense,
+                categoryName = category?.name ?: "Unknown",
+                categoryIcon = category?.icon,
+                categoryColorHex = category?.color,
+                currency = currency
+            )
+        }
+    }
 }

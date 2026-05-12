@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.DateFormats
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.data.local.entity.MonthlyBudgetEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
@@ -35,6 +36,7 @@ class HomeViewModel(
     private val totalSpentFlow = expenseRepository.observeTotalForMonth(currentMonth)
     private val monthlyBudgetFlow = budgetRepository.observeMonthlyBudget(currentMonth)
     private val goalsFlow = savingsRepository.observeGoals()
+    private val recentExpensesFlow = expenseRepository.observeExpensesForMonth(currentMonth)
 
     private val categorySpentFlow = categoriesFlow.flatMapLatest { categories ->
         if (categories.isEmpty()) {
@@ -57,11 +59,11 @@ class HomeViewModel(
         totalSpentFlow,
         monthlyBudgetFlow,
         goalsFlow,
-        combine(categorySpentFlow, onboardingRepository.observeProfile()) { spent, profile ->
-            spent to profile
+        combine(categorySpentFlow, onboardingRepository.observeProfile(), recentExpensesFlow) { spent, profile, expenses ->
+            Triple(spent, profile, expenses)
         }
-    ) { categories, totalSpent, monthlyBudget, goals, spentAndProfile ->
-        val (categorySpent, profile) = spentAndProfile
+    ) { categories, totalSpent, monthlyBudget, goals, spentAndProfileAndExpenses ->
+        val (categorySpent, profile, recentExpenses) = spentAndProfileAndExpenses
         val topCategories = buildTopCategories(categories, categorySpent)
         val activeGoals = goals.filter { !it.isCompleted }.take(3)
         HomeUiState(
@@ -71,6 +73,8 @@ class HomeViewModel(
             remainingMinor = monthlyBudget?.totalLimitMinor?.minus(totalSpent),
             topCategories = topCategories,
             goals = activeGoals,
+            recentExpenses = recentExpenses.take(3),
+            categories = categories,
             greeting = greetingForTime(profile.name),
             currency = profile.currency,
             userName = profile.name
@@ -84,6 +88,8 @@ class HomeViewModel(
         val remainingMinor: Long? = null,
         val topCategories: List<CategorySpend> = emptyList(),
         val goals: List<SavingsGoalEntity> = emptyList(),
+        val recentExpenses: List<ExpenseEntity> = emptyList(),
+        val categories: List<CategoryEntity> = emptyList(),
         val greeting: String = "",
         val currency: String = "MAD",
         val userName: String = ""
