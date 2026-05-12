@@ -129,6 +129,7 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     onUpdateCurrency = viewModel::updateCurrency,
                     onUpdateName = viewModel::updateName,
                     onExportCsv = viewModel::exportCsv,
+                    onImportCsv = viewModel::importCsv,
                     onCreateCategory = viewModel::createCategory,
                     onRenameCategory = viewModel::renameCategory,
                     onArchiveCategory = viewModel::archiveCategory,

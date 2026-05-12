@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.ui.components.CategoryDefaults
@@ -39,6 +41,7 @@ fun SettingsScreen(
     onUpdateCurrency: (String) -> Unit,
     onUpdateName: (String) -> Unit,
     onExportCsv: (android.content.Context) -> Unit,
+    onImportCsv: (android.content.Context, android.net.Uri) -> Unit,
     onCreateCategory: (String, String?, String?) -> Unit,
     onRenameCategory: (CategoryEntity, String, String?, String?) -> Unit,
     onArchiveCategory: (CategoryEntity) -> Unit,
@@ -52,6 +55,12 @@ fun SettingsScreen(
     var showManageCategories by remember { mutableStateOf(false) }
     var showAddCategory by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { onImportCsv(context, it) }
+    }
 
     Column(
         modifier = modifier
@@ -112,12 +121,19 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsSection(title = "EXPORT") {
-                    SettingsItem(
-                        icon = Lucide.Download,
-                        title = "Export CSV",
-                        onClick = { onExportCsv(context) }
-                    )
+                SettingsSection(title = "DATA") {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SettingsItem(
+                            icon = Lucide.Download,
+                            title = "Export CSV",
+                            onClick = { onExportCsv(context) }
+                        )
+                        SettingsItem(
+                            icon = Lucide.Upload,
+                            title = "Import CSV",
+                            onClick = { filePickerLauncher.launch("text/csv") }
+                        )
+                    }
                 }
             }
 

@@ -1,10 +1,14 @@
 package com.omargannoune.smartbudget.ui.settings
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Environment
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
@@ -98,6 +102,71 @@ class SettingsViewModel(
         exportFilePath.value = null
     }
 
+    fun importCsv(context: Context, fileUri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val csv = context.contentResolver.openInputStream(fileUri)?.bufferedReader().use { it?.readText() }
+                    ?: throw Exception("Unable to read file")
+                
+                val categories = categoryRepository.observeAllCategories().first()
+                val categoryLookup = categories.associateBy { it.name }
+                
+                val lines = csv.split("\n").filter { it.isNotBlank() }
+                if (lines.isEmpty()) {
+                    throw Exception("CSV file is empty")
+                }
+                
+                // Skip header
+                val dataLines = lines.drop(1)
+                var importedCount = 0
+                
+                dataLines.forEach { line ->
+                    try {
+                        val values = parseCsvLine(line)
+                        if (values.size >= 9) {
+                            val date = values[0]
+                            val amount = values[1].toDoubleOrNull()?.let { (it * 100).toLong() } ?: 0L
+                            val currency = values[2]
+                            val categoryName = values[3]
+                            val note = values[4]
+                            val paymentMethod = values[5]
+                            val necessity = values[6].toIntOrNull()
+                            val isRecurring = values[7] == "1"
+                            val recurringSourceId = values[8].toLongOrNull()
+                            
+                            val categoryId = categoryLookup[categoryName]?.id
+                                ?: categoryRepository.observeAllCategories().first().firstOrNull()?.id
+                                ?: return@forEach
+                            
+                            val expense = ExpenseEntity(
+                                date = date,
+                                amountMinor = amount,
+                                currency = currency,
+                                categoryId = categoryId,
+                                note = note,
+                                paymentMethod = paymentMethod,
+                                necessityRating = necessity,
+                                isRecurringInstance = isRecurring,
+                                recurringSourceId = recurringSourceId,
+                                createdAt = System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            
+                            expenseRepository.createExpense(expense)
+                            importedCount++
+                        }
+                    } catch (e: Exception) {
+                        // Skip malformed lines
+                    }
+                }
+                
+                exportMessage.value = "Imported $importedCount expenses successfully"
+            }.onFailure {
+                exportMessage.value = "Import failed: ${it.message}"
+            }
+        }
+    }
+
     fun exportCsv(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
@@ -111,10 +180,23 @@ class SettingsViewModel(
                     .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
                 val file = File(directory, "smartbudget_export_${timestamp}.csv")
                 file.writeText(csv)
-                exportMessage.value = "CSV saved successfully"
+                
+                // Share the file with other apps
+                val fileUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, fileUri)
+                    putExtra(Intent.EXTRA_SUBJECT, "SmartBudget Export - $timestamp")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                
+                val chooser = Intent.createChooser(shareIntent, "Share SmartBudget Export")
+                context.startActivity(chooser)
+                
+                exportMessage.value = "CSV exported successfully"
                 exportFilePath.value = file.absolutePath
             }.onFailure {
-                exportMessage.value = "Export failed"
+                exportMessage.value = "Export failed: ${it.message}"
                 exportFilePath.value = null
             }
         }
@@ -152,5 +234,38 @@ class SettingsViewModel(
         val escaped = raw.replace("\"", "\"\"")
         val needsQuotes = escaped.any { it == ',' || it == '\n' || it == '\r' || it == '"' }
         return if (needsQuotes) "\"$escaped\"" else escaped
+    }
+
+    private fun parseCsvLine(line: String): List<String> {
+        val result = mutableListOf<String>()
+        var current = StringBuilder()
+        var inQuotes = false
+        var i = 0
+        
+        while (i < line.length) {
+            val char = line[i]
+            when {
+                char == '"' && inQuotes && i + 1 < line.length && line[i + 1] == '"' -> {
+                    // Escaped quote
+                    current.append('"')
+                    i += 2
+                }
+                char == '"' -> {
+                    inQuotes = !inQuotes
+                    i++
+                }
+                char == ',' && !inQuotes -> {
+                    result.add(current.toString())
+                    current = StringBuilder()
+                    i++
+                }
+                else -> {
+                    current.append(char)
+                    i++
+                }
+            }
+        }
+        result.add(current.toString())
+        return result
     }
 }
