@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -35,13 +36,23 @@ fun HomeScreen(
     onSeeMoreExpenses: () -> Unit,
     onSeeAllGoals: () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp)
-            .padding(bottom = 80.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.onboarding_bg),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .alpha(0.2f),
+            contentScale = ContentScale.Crop
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(bottom = 80.dp)
+        ) {
         Text(
             text = uiState.greeting,
             style = MaterialTheme.typography.headlineSmall,
@@ -111,6 +122,7 @@ fun HomeScreen(
             EmptyInsightsState()
         } else {
             TopCategoriesList(categories = uiState.topCategories, currency = uiState.currency)
+        }
         }
     }
 }
