@@ -88,9 +88,56 @@ class OnboardingViewModel(
         }
     }
 
+    fun updateGoal(id: Long, name: String, targetMinor: Long, targetDate: String?) {
+        viewModelScope.launch {
+            // Fetch the existing goal to preserve its state
+            val existingGoal = savingsRepository.observeGoal(id).first()
+            if (existingGoal != null) {
+                savingsRepository.updateGoal(
+                    existingGoal.copy(
+                        name = name,
+                        targetAmountMinor = targetMinor,
+                        targetDate = targetDate,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+            }
+        }
+    }
+
+    fun deleteGoal(goalId: Long) {
+        viewModelScope.launch {
+            savingsRepository.deleteGoal(goalId)
+        }
+    }
+
     fun createCategory(name: String, icon: String?, color: String?) {
         viewModelScope.launch {
             categoryRepository.createCategory(name = name, icon = icon, color = color)
+        }
+    }
+
+    fun updateCategory(id: Long, name: String, icon: String?, color: String?) {
+        viewModelScope.launch {
+            // Fetch all categories and find the one to update
+            val categories = categoryRepository.observeAllCategories().first()
+            val existingCategory = categories.find { it.id == id }
+            if (existingCategory != null) {
+                categoryRepository.updateCategory(
+                    existingCategory.copy(
+                        name = name,
+                        icon = icon,
+                        color = color,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+            }
+        }
+    }
+
+    fun deleteCategory(categoryId: Long) {
+        viewModelScope.launch {
+            categoryRepository.deleteCategoryMoveExpenses(categoryId)
         }
     }
 

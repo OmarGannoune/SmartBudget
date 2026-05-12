@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -13,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,14 +23,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -99,6 +105,12 @@ fun OnboardingNav(
             GoalsSetupScreen(
                 goals = uiState.goals,
                 onAddGoal = viewModel::createGoal,
+                onUpdateGoal = { id, name, targetMinor, targetDate ->
+                    viewModel.updateGoal(id, name, targetMinor, targetDate)
+                },
+                onDeleteGoal = { goalId ->
+                    viewModel.deleteGoal(goalId)
+                },
                 onContinue = { navController.navigate(OnboardingRoutes.Categories) },
                 onSkip = { navController.navigate(OnboardingRoutes.Categories) }
             )
@@ -107,6 +119,12 @@ fun OnboardingNav(
             CategoriesSetupScreen(
                 categories = uiState.categories,
                 onAddCategory = viewModel::createCategory,
+                onUpdateCategory = { id, name, icon, color ->
+                    viewModel.updateCategory(id, name, icon, color)
+                },
+                onDeleteCategory = { categoryId ->
+                    viewModel.deleteCategory(categoryId)
+                },
                 onContinue = { navController.navigate(OnboardingRoutes.Budget) },
                 onSkip = { navController.navigate(OnboardingRoutes.Budget) }
             )
@@ -301,10 +319,13 @@ private fun ProfileScreen(
 private fun GoalsSetupScreen(
     goals: List<SavingsGoalEntity>,
     onAddGoal: (name: String, targetMinor: Long, targetDate: String?) -> Unit,
+    onUpdateGoal: (id: Long, name: String, targetMinor: Long, targetDate: String?) -> Unit,
+    onDeleteGoal: (goalId: Long) -> Unit,
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingGoal by remember { mutableStateOf<SavingsGoalEntity?>(null) }
 
     OnboardingScreenContainer(
         title = "Create your goals",
@@ -316,14 +337,17 @@ private fun GoalsSetupScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
-                onClick = { showAddDialog = true },
+                onClick = { 
+                    editingGoal = null
+                    showAddDialog = true 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.background
                 )
             ) {
                 Icon(Lucide.Plus, null, modifier = Modifier.size(20.dp))
@@ -333,34 +357,86 @@ private fun GoalsSetupScreen(
 
             if (goals.isNotEmpty()) {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.heightIn(max = 300.dp)
                 ) {
-                    items(goals) { goal ->
+                    items(goals, key = { it.id }) { goal ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = MaterialTheme.colorScheme.surface
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(goal.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                    goal.targetDate?.let {
-                                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(goal.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                        goal.targetDate?.let {
+                                            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        IconButton(
+                                            onClick = { editingGoal = goal; showAddDialog = true },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Lucide.Pencil,
+                                                null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.tertiary
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { onDeleteGoal(goal.id) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Lucide.Trash2,
+                                                null,
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
                                 }
-                                Text(
-                                    text = formatAmount(goal.targetAmountMinor),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.tertiary
+                                Spacer(modifier = Modifier.height(12.dp))
+                                val progress = if (goal.targetAmountMinor > 0L) {
+                                    (goal.currentAmountMinor.toFloat() / goal.targetAmountMinor).coerceIn(0f, 1f)
+                                } else {
+                                    0f
+                                }
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = formatAmount(goal.currentAmountMinor),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = formatAmount(goal.targetAmountMinor),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
                             }
                         }
                     }
@@ -370,13 +446,239 @@ private fun GoalsSetupScreen(
     }
 
     if (showAddDialog) {
-        AddGoalDialog(
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, amount, date ->
-                onAddGoal(name, amount, date)
+        AddGoalBottomSheetDialog(
+            existingGoal = editingGoal,
+            onDismiss = { 
                 showAddDialog = false
+                editingGoal = null
+            },
+            onConfirm = { name, amount, date ->
+                if (editingGoal != null) {
+                    onUpdateGoal(editingGoal!!.id, name, amount, date)
+                } else {
+                    onAddGoal(name, amount, date)
+                }
+                showAddDialog = false
+                editingGoal = null
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddGoalBottomSheetDialog(
+    existingGoal: SavingsGoalEntity?,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Long, String?) -> Unit
+) {
+    var nameText by remember { mutableStateOf(existingGoal?.name ?: "") }
+    var amountText by remember {
+        mutableStateOf(existingGoal?.let { (it.targetAmountMinor / 100).toString() } ?: "")
+    }
+    var selectedDate by remember { mutableStateOf(existingGoal?.targetDate?.let { LocalDate.parse(it) } ?: LocalDate.now()) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var amountError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .clip(RoundedCornerShape(24.dp)),
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (existingGoal == null) "Create Goal" else "Edit Goal",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(Lucide.X, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
+                // Goal Name
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it },
+                    placeholder = { Text("Goal name") },
+                    label = { Text("Goal name") },
+                    isError = nameError != null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+                if (nameError != null) {
+                    Text(
+                        text = nameError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                // Amount Section
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (amountText.isEmpty()) {
+                                Text(
+                                    "0",
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 56.sp
+                                    )
+                                )
+                            }
+                            BasicTextField(
+                                value = amountText,
+                                onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) amountText = it },
+                                textStyle = MaterialTheme.typography.displayLarge.copy(
+                                    textAlign = TextAlign.Start,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 56.sp
+                                ),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.tertiary),
+                                modifier = Modifier.width(IntrinsicSize.Min)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "MAD",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Amount Shortcuts
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf(100, 500, 1000, 5000).forEach { value ->
+                            Surface(
+                                onClick = {
+                                    val current = amountText.toDoubleOrNull() ?: 0.0
+                                    amountText = (current + value).toInt().toString()
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "+$value",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (amountError != null) {
+                    Text(
+                        text = amountError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                // Target Date
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showDatePicker = true },
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Lucide.Calendar,
+                            null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Target date • ${selectedDate.format(DateTimeFormatter.ofPattern("MMMM dd"))}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            nameError = null
+                            amountError = null
+                            val amountMinor = parseAmountToMinor(amountText)
+                            if (nameText.isBlank()) {
+                                nameError = "Enter a goal name"
+                            }
+                            if (amountMinor == null || amountMinor <= 0) {
+                                amountError = "Enter a valid amount"
+                            }
+                            if (nameError == null && amountError == null) {
+                                onConfirm(nameText.trim(), amountMinor ?: 0L, selectedDate.toString())
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                    ) {
+                        Text("Save", color = MaterialTheme.colorScheme.background)
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { selectedDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate() }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = datePickerState) }
     }
 }
 
@@ -487,10 +789,13 @@ private fun AddGoalDialog(
 private fun CategoriesSetupScreen(
     categories: List<CategoryEntity>,
     onAddCategory: (String, String?, String?) -> Unit,
+    onUpdateCategory: (id: Long, name: String, icon: String?, color: String?) -> Unit,
+    onDeleteCategory: (categoryId: Long) -> Unit,
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf<CategoryEntity?>(null) }
 
     OnboardingScreenContainer(
         title = "Pick your categories",
@@ -502,14 +807,17 @@ private fun CategoriesSetupScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
-                onClick = { showAddDialog = true },
+                onClick = { 
+                    editingCategory = null
+                    showAddDialog = true 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.background
                 )
             ) {
                 Icon(Lucide.Plus, null, modifier = Modifier.size(20.dp))
@@ -518,17 +826,99 @@ private fun CategoriesSetupScreen(
             }
 
             if (categories.isNotEmpty()) {
-                CategoryPreviewList(categories = categories)
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.heightIn(max = 300.dp)
+                ) {
+                    items(categories, key = { it.id }) { category ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    val catColor = getCategoryColor(category.color)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(catColor.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = getCategoryIcon(category.icon),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = catColor
+                                        )
+                                    }
+                                    Text(
+                                        text = category.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    IconButton(
+                                        onClick = { editingCategory = category; showAddDialog = true },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            Lucide.Pencil,
+                                            null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { onDeleteCategory(category.id) },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            Lucide.Trash2,
+                                            null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     if (showAddDialog) {
         AddCategoryDialog(
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, icon, color ->
-                onAddCategory(name, icon, color)
+            existingCategory = editingCategory,
+            onDismiss = { 
                 showAddDialog = false
+                editingCategory = null
+            },
+            onConfirm = { name, icon, color ->
+                if (editingCategory != null) {
+                    onUpdateCategory(editingCategory!!.id, name, icon, color)
+                } else {
+                    onAddCategory(name, icon, color)
+                }
+                showAddDialog = false
+                editingCategory = null
             }
         )
     }
@@ -536,12 +926,13 @@ private fun CategoriesSetupScreen(
 
 @Composable
 private fun AddCategoryDialog(
+    existingCategory: CategoryEntity? = null,
     onDismiss: () -> Unit,
     onConfirm: (String, String?, String?) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf<String?>(CategoryDefaults.Icons.first()) }
-    var selectedColor by remember { mutableStateOf<String?>(CategoryDefaults.Colors.first()) }
+    var name by remember { mutableStateOf(existingCategory?.name ?: "") }
+    var selectedIcon by remember { mutableStateOf<String?>(existingCategory?.icon ?: CategoryDefaults.Icons.first()) }
+    var selectedColor by remember { mutableStateOf<String?>(existingCategory?.color ?: CategoryDefaults.Colors.first()) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -555,7 +946,7 @@ private fun AddCategoryDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Text(text = "New Category", style = MaterialTheme.typography.titleLarge)
+                Text(text = if (existingCategory == null) "New Category" else "Edit Category", style = MaterialTheme.typography.titleLarge)
 
                 OnboardingTextField(
                     value = name,
