@@ -58,6 +58,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.animation.core)
     ksp(libs.androidx.room.compiler)
     coreLibraryDesugaring(libs.android.desugar)
     implementation(libs.kotlinx.coroutines.android)
