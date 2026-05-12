@@ -114,7 +114,10 @@ class OnboardingViewModel(
 
     fun createCategory(name: String, icon: String?, color: String?) {
         viewModelScope.launch {
-            categoryRepository.createCategory(name = name, icon = icon, color = color)
+            // Ensure icon and color have defaults if not provided
+            val finalIcon = if (icon.isNullOrBlank()) com.omargannoune.smartbudget.ui.components.CategoryDefaults.Icons.firstOrNull() else icon
+            val finalColor = if (color.isNullOrBlank()) com.omargannoune.smartbudget.ui.components.CategoryDefaults.Colors.firstOrNull() else color
+            categoryRepository.createCategory(name = name, icon = finalIcon, color = finalColor)
         }
     }
 
@@ -177,6 +180,8 @@ class OnboardingViewModel(
 
     fun completeOnboarding() {
         viewModelScope.launch {
+            // Ensure default categories are created with icons/colors
+            categoryRepository.ensureDefaultCategories()
             onboardingRepository.setOnboardingComplete(true)
         }
     }

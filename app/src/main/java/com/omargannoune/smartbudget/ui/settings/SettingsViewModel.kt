@@ -10,8 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
+import com.omargannoune.smartbudget.data.repository.BudgetRepository
 import com.omargannoune.smartbudget.data.repository.CategoryRepository
 import com.omargannoune.smartbudget.data.repository.ExpenseRepository
+import com.omargannoune.smartbudget.data.repository.RecurringRepository
+import com.omargannoune.smartbudget.data.repository.SavingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -22,6 +25,9 @@ import java.time.format.DateTimeFormatter
 class SettingsViewModel(
     private val categoryRepository: CategoryRepository,
     private val expenseRepository: ExpenseRepository,
+    private val budgetRepository: BudgetRepository,
+    private val savingsRepository: SavingsRepository,
+    private val recurringRepository: RecurringRepository,
     private val onboardingRepository: OnboardingRepository
 ) : ViewModel() {
     private val exportMessage = MutableStateFlow<String?>(null)
@@ -52,8 +58,51 @@ class SettingsViewModel(
 
     fun clearAllData() {
         viewModelScope.launch {
-            onboardingRepository.setOnboardingComplete(false)
+            try {
+                // Delete all expenses
+                val allExpenses = expenseRepository.getAllExpenses()
+                allExpenses.forEach { expense ->
+                    expenseRepository.deleteExpense(expense.id)
+                }
+                
+                // Delete all recurring rules
+                val allRules = recurringRepository.observeAllRules().first()
+                allRules.forEach { rule ->
+                    recurringRepository.deleteRule(rule.id)
+                }
+                
+                // Delete all savings goals
+                val allGoals = savingsRepository.observeGoals().first()
+                allGoals.forEach { goal ->
+                    savingsRepository.deleteGoal(goal.id)
+                }
+                
+                // Delete only non-default categories (user-added ones)
+                val allCategories = categoryRepository.observeAllCategories().first()
+                allCategories.forEach { category ->
+                    if (!isDefaultCategory(category.name)) {
+                        categoryRepository.deleteCategoryMoveExpenses(category.id)
+                    }
+                }
+                
+                // Reset profile (name and currency)
+                onboardingRepository.saveProfile("", "MAD")
+                
+                // Ensure default categories are recreated with icons/colors
+                categoryRepository.ensureDefaultCategories()
+                
+                // Reset onboarding to false so user goes back to onboarding flow
+                onboardingRepository.setOnboardingComplete(false)
+                
+                exportMessage.value = "All data cleared successfully"
+            } catch (e: Exception) {
+                exportMessage.value = "Error clearing data: ${e.message}"
+            }
         }
+    }
+    
+    private fun isDefaultCategory(categoryName: String): Boolean {
+        return listOf("Food", "Transport", "Rent", "Health", "Leisure", "Studies", "Other").contains(categoryName)
     }
 
     fun updateCurrency(currency: String) {
@@ -71,7 +120,10 @@ class SettingsViewModel(
 
     fun createCategory(name: String, icon: String?, color: String?) {
         viewModelScope.launch {
-            categoryRepository.createCategory(name = name, icon = icon, color = color)
+            // Ensure icon and color have defaults if not provided
+            val finalIcon = if (icon.isNullOrBlank()) com.omargannoune.smartbudget.ui.components.CategoryDefaults.Icons.firstOrNull() else icon
+            val finalColor = if (color.isNullOrBlank()) com.omargannoune.smartbudget.ui.components.CategoryDefaults.Colors.firstOrNull() else color
+            categoryRepository.createCategory(name = name, icon = finalIcon, color = finalColor)
         }
     }
 

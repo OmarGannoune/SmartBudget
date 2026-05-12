@@ -42,6 +42,9 @@ object AppViewModelProvider {
                         SettingsViewModel(
                             categoryRepository = app.container.categoryRepository,
                             expenseRepository = app.container.expenseRepository,
+                            budgetRepository = app.container.budgetRepository,
+                            savingsRepository = app.container.savingsRepository,
+                            recurringRepository = app.container.recurringRepository,
                             onboardingRepository = app.container.onboardingRepository
                         ) as T
                     }

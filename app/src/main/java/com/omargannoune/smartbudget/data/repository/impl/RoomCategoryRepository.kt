@@ -14,6 +14,18 @@ class RoomCategoryRepository(
     private val expenseDao: ExpenseDao,
     private val timeProvider: TimeProvider
 ) : CategoryRepository {
+    
+    companion object {
+        private val DEFAULT_CATEGORIES = mapOf(
+            "Food" to Pair("Utensils", "#FFFFB86B"),
+            "Transport" to Pair("Bus", "#5DE2C6"),
+            "Rent" to Pair("Home", "#FF6B6B"),
+            "Health" to Pair("HeartPulse", "#3BD671"),
+            "Leisure" to Pair("Gamepad2", "#C7D1FF"),
+            "Studies" to Pair("GraduationCap", "#F5C451"),
+            "Other" to Pair("ShoppingBag", "#A9B1BF")
+        )
+    }
     override fun observeActiveCategories(): Flow<List<CategoryEntity>> =
         categoryDao.observeActiveCategories()
 
@@ -78,30 +90,36 @@ class RoomCategoryRepository(
 
     override suspend fun ensureDefaultCategories() {
         withContext(Dispatchers.IO) {
-            val defaults = listOf(
-                "Food",
-                "Transport",
-                "Rent",
-                "Health",
-                "Leisure",
-                "Studies",
-                "Other"
-            )
-            defaults.forEach { name ->
-                if (categoryDao.findByName(name) == null) {
+            DEFAULT_CATEGORIES.forEach { (name, iconColorPair) ->
+                val (icon, color) = iconColorPair
+                val existing = categoryDao.findByName(name)
+                if (existing == null) {
                     val now = timeProvider.nowMillis()
                     categoryDao.insert(
                         CategoryEntity(
                             name = name,
-                            icon = null,
-                            color = null,
+                            icon = icon,
+                            color = color,
                             isActive = true,
                             createdAt = now,
                             updatedAt = now
                         )
                     )
+                } else if (existing.icon == null || existing.color == null) {
+                    // Update existing default category with icon/color if missing
+                    categoryDao.update(
+                        existing.copy(
+                            icon = icon,
+                            color = color,
+                            updatedAt = timeProvider.nowMillis()
+                        )
+                    )
                 }
             }
         }
+    }
+    
+    fun isDefaultCategory(categoryName: String): Boolean {
+        return DEFAULT_CATEGORIES.containsKey(categoryName)
     }
 }
