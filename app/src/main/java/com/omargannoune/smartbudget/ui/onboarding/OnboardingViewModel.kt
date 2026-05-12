@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omargannoune.smartbudget.data.local.DateFormats
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.local.entity.CategoryMonthlyBudgetEntity
 import com.omargannoune.smartbudget.data.local.entity.MonthlyBudgetEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
 import com.omargannoune.smartbudget.data.preferences.OnboardingRepository
@@ -152,6 +153,25 @@ class OnboardingViewModel(
                     updatedAt = System.currentTimeMillis()
                 )
             )
+        }
+    }
+
+    fun setCategoryBudgets(categoryBudgets: Map<Long, Long>) {
+        viewModelScope.launch {
+            val month = LocalDate.now().format(DateTimeFormatter.ofPattern(DateFormats.MONTH_PATTERN))
+            categoryBudgets.forEach { (categoryId, limitMinor) ->
+                if (limitMinor > 0L) {
+                    budgetRepository.upsertCategoryBudget(
+                        CategoryMonthlyBudgetEntity(
+                            month = month,
+                            categoryId = categoryId,
+                            limitMinor = limitMinor,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+            }
         }
     }
 

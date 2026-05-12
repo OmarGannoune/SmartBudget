@@ -131,7 +131,9 @@ fun OnboardingNav(
         }
         composable(OnboardingRoutes.Budget) {
             BudgetSetupScreen(
+                categories = uiState.categories,
                 onSaveBudget = viewModel::setMonthlyBudget,
+                onSaveCategoryBudgets = viewModel::setCategoryBudgets,
                 onContinue = { navController.navigate(OnboardingRoutes.Done) },
                 onSkip = { navController.navigate(OnboardingRoutes.Done) }
             )
@@ -1112,44 +1114,198 @@ private fun CategoryPreviewList(categories: List<CategoryEntity>) {
 
 @Composable
 private fun BudgetSetupScreen(
+    categories: List<CategoryEntity>,
     onSaveBudget: (Long) -> Unit,
+    onSaveCategoryBudgets: (Map<Long, Long>) -> Unit,
     onContinue: () -> Unit,
     onSkip: () -> Unit
 ) {
     var amountText by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
+    var categoryBudgets by remember { mutableStateOf(categories.associate { it.id to "" }) }
 
     OnboardingScreenContainer(
         title = "Set your monthly budget",
         subtitle = "Add a total limit and optional category limits.",
-        onPrimaryClick = onContinue,
+        onPrimaryClick = {
+            amountError = null
+            val amountMinor = parseAmountToMinor(amountText)
+            if (amountMinor == null || amountMinor <= 0L) {
+                amountError = "Enter a valid amount"
+            } else {
+                onSaveBudget(amountMinor)
+                // Save category budgets
+                val categoryBudgetMap = categoryBudgets.mapValues { (_, value) ->
+                    parseAmountToMinor(value) ?: 0L
+                }
+                onSaveCategoryBudgets(categoryBudgetMap)
+                onContinue()
+            }
+        },
         primaryText = "Continue",
         onSecondaryClick = onSkip,
         secondaryText = "Skip",
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            OnboardingTextField(
-                value = amountText,
-                onValueChange = { amountText = it },
-                label = "Total monthly budget",
-                placeholder = "0.00",
-                isError = amountError != null,
-                errorMessage = amountError
-            )
-            PrimaryButton(
-                text = "Set budget",
-                onClick = {
-                    amountError = null
-                    val amountMinor = parseAmountToMinor(amountText)
-                    if (amountMinor == null || amountMinor <= 0L) {
-                        amountError = "Enter a valid amount"
-                    } else {
-                        onSaveBudget(amountMinor)
+        Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            // Total Monthly Budget
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Total Monthly Budget", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                
+                // Amount Input (matching goal creation style)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (amountText.isEmpty()) {
+                                Text(
+                                    "0",
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 56.sp
+                                    )
+                                )
+                            }
+                            BasicTextField(
+                                value = amountText,
+                                onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) amountText = it },
+                                textStyle = MaterialTheme.typography.displayLarge.copy(
+                                    textAlign = TextAlign.Start,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 56.sp
+                                ),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.tertiary),
+                                modifier = Modifier.width(IntrinsicSize.Min)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "MAD",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Amount Shortcuts
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf(1000, 5000, 10000, 50000).forEach { value ->
+                            Surface(
+                                onClick = {
+                                    val current = amountText.toDoubleOrNull() ?: 0.0
+                                    amountText = (current + value).toInt().toString()
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "+$value",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (amountError != null) {
+                    Text(
+                        text = amountError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+
+            // Category Budgets
+            if (categories.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Category Budgets (Optional)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 250.dp)) {
+                        items(categories, key = { it.id }) { category ->
+                            CategoryBudgetField(
+                                category = category,
+                                budgetAmount = categoryBudgets[category.id] ?: "",
+                                onBudgetChange = { newAmount ->
+                                    categoryBudgets = categoryBudgets.toMutableMap().apply {
+                                        this[category.id] = newAmount
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryBudgetField(
+    category: CategoryEntity,
+    budgetAmount: String,
+    onBudgetChange: (String) -> Unit
+) {
+    val catColor = getCategoryColor(category.color)
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Category Icon and Name
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(catColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getCategoryIcon(category.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = catColor
+                )
+            }
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
+
+        // Budget Input
+        OutlinedTextField(
+            value = budgetAmount,
+            onValueChange = onBudgetChange,
+            modifier = Modifier.width(100.dp),
+            placeholder = { Text("0.00", style = MaterialTheme.typography.bodySmall) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodySmall,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
+        )
     }
 }
 
