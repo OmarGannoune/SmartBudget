@@ -31,15 +31,18 @@ class ExpensesViewModel(
 
     val expensesUiState: StateFlow<ExpensesUiState> = currentMonth
         .flatMapLatest { month ->
+            val previousMonth = YearMonth.parse(month).minusMonths(1).format(monthFormatter)
             combine(
                 expenseRepository.observeExpensesForMonth(month),
                 expenseRepository.observeTotalForMonth(month),
+                expenseRepository.observeTotalForMonth(previousMonth),
                 categoryRepository.observeAllCategories(),
                 onboardingRepository.observeProfile()
-            ) { expenses, total, categories, profile ->
+            ) { expenses, total, previousTotal, categories, profile ->
                 ExpensesUiState(
                     month = month,
                     totalMinor = total,
+                    previousMonthTotalMinor = previousTotal,
                     expenses = expenses,
                     allCategories = categories,
                     activeCategories = categories.filter { it.isActive },
@@ -52,6 +55,7 @@ class ExpensesViewModel(
     data class ExpensesUiState(
         val month: String = "",
         val totalMinor: Long = 0L,
+        val previousMonthTotalMinor: Long = 0L,
         val expenses: List<ExpenseEntity> = emptyList(),
         val allCategories: List<CategoryEntity> = emptyList(),
         val activeCategories: List<CategoryEntity> = emptyList(),
