@@ -84,7 +84,12 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     modifier = Modifier.padding(innerPadding),
                     onAddExpense = { showAddExpenseSheet = true },
                     onSeeMoreExpenses = { navController.navigate(Routes.Expenses) },
-                    onSeeAllGoals = { navController.navigate(Routes.Goals) }
+                    onSeeAllGoals = { navController.navigate(Routes.Goals) },
+                    onEditExpense = {},
+                    onDeleteExpense = expensesViewModel::deleteExpense,
+                    onUpdateExpense = { expenseId, amountMinor, date, categoryId, note, paymentMethod, necessityRating ->
+                        expensesViewModel.updateExpense(expenseId, amountMinor, date, categoryId, note, paymentMethod, necessityRating)
+                    }
                 )
             }
             composable(Routes.Expenses) {
@@ -94,7 +99,12 @@ fun SmartBudgetNav(viewModelFactory: ViewModelProvider.Factory) {
                     modifier = Modifier.padding(innerPadding),
                     onAddExpenseClick = { showAddExpenseSheet = true },
                     onPreviousMonth = expensesViewModel::goToPreviousMonth,
-                    onNextMonth = expensesViewModel::goToNextMonth
+                    onNextMonth = expensesViewModel::goToNextMonth,
+                    onEditExpense = {},
+                    onDeleteExpense = expensesViewModel::deleteExpense,
+                    onUpdateExpense = { expenseId, amountMinor, date, categoryId, note, paymentMethod, necessityRating ->
+                        expensesViewModel.updateExpense(expenseId, amountMinor, date, categoryId, note, paymentMethod, necessityRating)
+                    }
                 )
             }
             composable(Routes.Budgets) {

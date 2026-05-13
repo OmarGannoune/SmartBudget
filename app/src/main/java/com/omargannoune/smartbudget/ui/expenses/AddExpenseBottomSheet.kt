@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
+import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.getCategoryColor
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
@@ -37,6 +38,7 @@ import java.time.format.DateTimeFormatter
 fun AddExpenseBottomSheet(
     categories: List<CategoryEntity>,
     onDismiss: () -> Unit,
+    expenseToEdit: ExpenseEntity? = null,
     onSave: (
         amountMinor: Long,
         date: String,
@@ -47,6 +49,7 @@ fun AddExpenseBottomSheet(
     ) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isEditMode = expenseToEdit != null
     var amountText by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
@@ -55,8 +58,16 @@ fun AddExpenseBottomSheet(
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(categories) {
-        if (selectedCategoryId == null) {
+    LaunchedEffect(categories, expenseToEdit) {
+        if (isEditMode && expenseToEdit != null) {
+            // Populate fields from expense to edit
+            amountText = (expenseToEdit.amountMinor / 100.0).toString()
+            noteText = expenseToEdit.note ?: ""
+            selectedCategoryId = expenseToEdit.categoryId
+            selectedPaymentMethod = expenseToEdit.paymentMethod ?: "Card"
+            necessityRating = (expenseToEdit.necessityRating ?: 5).toFloat()
+            selectedDate = LocalDate.parse(expenseToEdit.date)
+        } else if (selectedCategoryId == null) {
             selectedCategoryId = categories.firstOrNull { it.isActive }?.id
         }
     }
@@ -83,7 +94,7 @@ fun AddExpenseBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Add Expense",
+                    text = if (isEditMode) "Edit Expense" else "Add Expense",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -278,7 +289,7 @@ fun AddExpenseBottomSheet(
             }
 
             PrimaryButton(
-                text = "Save expense",
+                text = if (isEditMode) "Update expense" else "Save expense",
                 onClick = {
                     val amountDouble = amountText.toDoubleOrNull() ?: 0.0
                     val amountMinor = (amountDouble * 100).toLong()

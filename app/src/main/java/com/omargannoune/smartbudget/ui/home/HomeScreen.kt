@@ -10,6 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -30,6 +34,7 @@ import com.omargannoune.smartbudget.ui.components.SectionTitle
 import com.omargannoune.smartbudget.ui.components.formatAmount
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import com.omargannoune.smartbudget.ui.components.ExpenseRowComponent
+import com.omargannoune.smartbudget.ui.expenses.AddExpenseBottomSheet
 
 @Composable
 fun HomeScreen(
@@ -37,8 +42,21 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
     onSeeMoreExpenses: () -> Unit,
-    onSeeAllGoals: () -> Unit
+    onSeeAllGoals: () -> Unit,
+    onEditExpense: (ExpenseEntity) -> Unit = {},
+    onDeleteExpense: (Long) -> Unit = {},
+    onUpdateExpense: (
+        expenseId: Long,
+        amountMinor: Long,
+        date: String,
+        categoryId: Long,
+        note: String?,
+        paymentMethod: String?,
+        necessityRating: Int?
+    ) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
+    var showEditSheet by remember { mutableStateOf(false) }
+    var selectedExpenseForEdit by remember { mutableStateOf<ExpenseEntity?>(null) }
     Box(modifier = modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.onboarding_bg),
@@ -127,7 +145,13 @@ fun HomeScreen(
             RecentExpensesList(
                 expenses = uiState.recentExpenses,
                 categories = uiState.categories,
-                currency = uiState.currency
+                currency = uiState.currency,
+                onEditExpense = { expense ->
+                    selectedExpenseForEdit = expense
+                    showEditSheet = true
+                    onEditExpense(expense)
+                },
+                onDeleteExpense = onDeleteExpense
             )
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -145,6 +169,30 @@ fun HomeScreen(
             TopCategoriesList(categories = uiState.topCategories, currency = uiState.currency)
         }
         }
+    }
+
+    if (showEditSheet && selectedExpenseForEdit != null) {
+        AddExpenseBottomSheet(
+            categories = uiState.categories,
+            expenseToEdit = selectedExpenseForEdit,
+            onDismiss = {
+                showEditSheet = false
+                selectedExpenseForEdit = null
+            },
+            onSave = { amountMinor, date, categoryId, note, paymentMethod, necessityRating ->
+                onUpdateExpense(
+                    selectedExpenseForEdit!!.id,
+                    amountMinor,
+                    date,
+                    categoryId,
+                    note,
+                    paymentMethod,
+                    necessityRating
+                )
+                showEditSheet = false
+                selectedExpenseForEdit = null
+            }
+        )
     }
 }
 
@@ -336,7 +384,13 @@ private fun EmptyInsightsState() {
 }
 
 @Composable
-private fun RecentExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>, currency: String = "MAD") {
+private fun RecentExpensesList(
+    expenses: List<ExpenseEntity>,
+    categories: List<CategoryEntity>,
+    currency: String = "MAD",
+    onEditExpense: (ExpenseEntity) -> Unit = {},
+    onDeleteExpense: (Long) -> Unit = {}
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         expenses.forEach { expense ->
             val category = categories.find { it.id == expense.categoryId }
@@ -345,7 +399,9 @@ private fun RecentExpensesList(expenses: List<ExpenseEntity>, categories: List<C
                 categoryName = category?.name ?: "Unknown",
                 categoryIcon = category?.icon,
                 categoryColorHex = category?.color,
-                currency = currency
+                currency = currency,
+                onEdit = { onEditExpense(expense) },
+                onDelete = { onDeleteExpense(expense.id) }
             )
         }
     }

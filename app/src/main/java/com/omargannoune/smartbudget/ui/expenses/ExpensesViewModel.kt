@@ -96,4 +96,38 @@ class ExpensesViewModel(
             YearMonth.parse(month).plusMonths(1).format(monthFormatter)
         }
     }
+
+    fun deleteExpense(expenseId: Long) {
+        viewModelScope.launch {
+            expenseRepository.deleteExpense(expenseId)
+        }
+    }
+
+    fun updateExpense(
+        expenseId: Long,
+        amountMinor: Long,
+        date: String,
+        categoryId: Long,
+        note: String?,
+        paymentMethod: String?,
+        necessityRating: Int?
+    ) {
+        viewModelScope.launch {
+            val updatedExpense = ExpenseEntity(
+                id = expenseId,
+                amountMinor = amountMinor,
+                currency = expensesUiState.value.currency,
+                date = date,
+                categoryId = categoryId,
+                note = note,
+                paymentMethod = paymentMethod,
+                necessityRating = necessityRating,
+                isRecurringInstance = false,
+                recurringSourceId = null,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            expenseRepository.updateExpense(updatedExpense)
+        }
+    }
 }

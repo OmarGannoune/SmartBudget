@@ -9,11 +9,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.*
+import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
@@ -32,8 +36,22 @@ fun ExpensesScreen(
     modifier: Modifier = Modifier,
     onAddExpenseClick: () -> Unit,
     onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    onNextMonth: () -> Unit,
+    onEditExpense: (ExpenseEntity) -> Unit = {},
+    onDeleteExpense: (Long) -> Unit = {},
+    onUpdateExpense: (
+        expenseId: Long,
+        amountMinor: Long,
+        date: String,
+        categoryId: Long,
+        note: String?,
+        paymentMethod: String?,
+        necessityRating: Int?
+    ) -> Unit = { _, _, _, _, _, _, _ -> }
 ) {
+    var showEditSheet by remember { mutableStateOf(false) }
+    var selectedExpenseForEdit by remember { mutableStateOf<ExpenseEntity?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -61,9 +79,39 @@ fun ExpensesScreen(
             ExpensesList(
                 expenses = uiState.expenses,
                 categories = uiState.allCategories,
-                currency = uiState.currency
+                currency = uiState.currency,
+                onEditExpense = { expense ->
+                    selectedExpenseForEdit = expense
+                    showEditSheet = true
+                    onEditExpense(expense)
+                },
+                onDeleteExpense = onDeleteExpense
             )
         }
+    }
+
+    if (showEditSheet && selectedExpenseForEdit != null) {
+        AddExpenseBottomSheet(
+            categories = uiState.allCategories,
+            expenseToEdit = selectedExpenseForEdit,
+            onDismiss = {
+                showEditSheet = false
+                selectedExpenseForEdit = null
+            },
+            onSave = { amountMinor, date, categoryId, note, paymentMethod, necessityRating ->
+                onUpdateExpense(
+                    selectedExpenseForEdit!!.id,
+                    amountMinor,
+                    date,
+                    categoryId,
+                    note,
+                    paymentMethod,
+                    necessityRating
+                )
+                showEditSheet = false
+                selectedExpenseForEdit = null
+            }
+        )
     }
 }
 
@@ -115,7 +163,13 @@ private fun TotalSpentCard(totalMinor: Long, currency: String = "MAD") {
 }
 
 @Composable
-private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<CategoryEntity>, currency: String = "MAD") {
+private fun ExpensesList(
+    expenses: List<ExpenseEntity>,
+    categories: List<CategoryEntity>,
+    currency: String = "MAD",
+    onEditExpense: (ExpenseEntity) -> Unit = {},
+    onDeleteExpense: (Long) -> Unit = {}
+) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 80.dp)
@@ -127,7 +181,9 @@ private fun ExpensesList(expenses: List<ExpenseEntity>, categories: List<Categor
                 categoryName = category?.name ?: "Unknown",
                 categoryIcon = category?.icon,
                 categoryColorHex = category?.color,
-                currency = currency
+                currency = currency,
+                onEdit = { onEditExpense(expense) },
+                onDelete = { onDeleteExpense(expense.id) }
             )
         }
     }
