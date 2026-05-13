@@ -248,7 +248,63 @@ All screens use:
 
 ---
 
-## 🔄 Future Enhancements
+## � Screenshots
+
+### Onboarding Flow
+
+**Welcome Screen**
+<img src="screenshots/onboarding_welcome.jpg" alt="Welcome Screen" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Profile Setup**
+<img src="screenshots/onboarding_profile.jpg" alt="Profile Setup" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Savings Goals Creation**
+<img src="screenshots/onboarding_goals.jpg" alt="Goals Setup" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Category Selection**
+<img src="screenshots/onboarding_categories.jpg" alt="Categories Setup" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Add Custom Category**
+<img src="screenshots/onboarding_categories_add.jpg" alt="Add Category" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Monthly Budget Configuration**
+<img src="screenshots/onboarding_budget.jpg" alt="Budget Setup" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Onboarding Complete**
+<img src="screenshots/onboarding_done.jpg" alt="Onboarding Complete" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+### App Screens
+
+**Home — Empty State**
+<img src="screenshots/home_empty.jpg" alt="Empty Home" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Expenses — Empty History**
+<img src="screenshots/history_empty.jpg" alt="Empty History" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Home Dashboard (Part 1)**
+<img src="screenshots/home_1.jpg" alt="Home Dashboard - Overview" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Home Dashboard (Part 2)**
+<img src="screenshots/home_2.jpg" alt="Home Dashboard - Expenses" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Add Expense Form**
+<img src="screenshots/add_expense_sheet.jpg" alt="Add Expense Sheet" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Expense History**
+<img src="screenshots/expenses_history.jpg" alt="Expenses History" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Budgets Screen**
+<img src="screenshots/budgets_screen.jpg" alt="Budgets Management" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Savings Goals Tracking**
+<img src="screenshots/goals_screen.jpg" alt="Savings Goals" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+**Settings & Preferences**
+<img src="screenshots/settings_screen.jpg" alt="Settings" style="border-radius: 12px; width: 60%; display: block; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+
+---
+
+## �🔄 Future Enhancements
 
 - 📊 Advanced analytics and reporting
 - 📅 Budget forecasting
