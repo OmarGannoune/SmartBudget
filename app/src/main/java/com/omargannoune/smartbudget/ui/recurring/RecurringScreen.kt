@@ -7,25 +7,51 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.lucide.*
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.RecurringRuleEntity
-import com.omargannoune.smartbudget.ui.components.AppTextButton
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.ScreenTitle
 import com.omargannoune.smartbudget.ui.components.getCategoryIcon
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun RecurringScreen(
@@ -292,81 +318,216 @@ private fun AddRecurringDialog(
         endDate: String?
     ) -> Unit
 ) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("MMMM dd") }
     var nameText by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
-    var startDateText by remember { mutableStateOf("") }
-    var endDateText by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf(LocalDate.now()) }
+    var endDate by remember { mutableStateOf<LocalDate?>(null) }
     var frequency by remember { mutableStateOf("monthly") }
     var selectedCategoryId by remember { mutableStateOf(categories.firstOrNull()?.id) }
     var nameError by remember { mutableStateOf<String?>(null) }
     var amountError by remember { mutableStateOf<String?>(null) }
     var dateError by remember { mutableStateOf<String?>(null) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text(text = "New Recurring Bill", style = MaterialTheme.typography.titleLarge) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = nameText,
-                    onValueChange = { nameText = it },
-                    label = { Text("Name") },
-                    isError = nameError != null,
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = "Add Recurring Bill",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                if (nameError != null) {
-                    Text(text = nameError ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                }
-
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = it },
-                    label = { Text("Amount") },
-                    isError = amountError != null,
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (amountError != null) {
-                    Text(text = amountError ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                }
-
-                CategoryDropdown(
-                    categories = categories,
-                    selectedId = selectedCategoryId,
-                    onSelected = { selectedCategoryId = it }
-                )
-
-                FrequencyDropdown(
-                    selected = frequency,
-                    onSelected = { frequency = it }
-                )
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = startDateText,
-                        onValueChange = { startDateText = it },
-                        label = { Text("Start (YYYY-MM-DD)") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = endDateText,
-                        onValueChange = { endDateText = it },
-                        label = { Text("End (Optional)") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-        },
-        confirmButton = {
-            Button(
+
+            OutlinedTextField(
+                value = nameText,
+                onValueChange = { nameText = it },
+                placeholder = { Text("Bill name") },
+                label = { Text("Bill name") },
+                isError = nameError != null,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
+            )
+            if (nameError != null) {
+                Text(
+                    text = nameError ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (amountText.isEmpty()) {
+                            Text(
+                                "0",
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 56.sp
+                                )
+                            )
+                        }
+                        BasicTextField(
+                            value = amountText,
+                            onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) amountText = it },
+                            textStyle = MaterialTheme.typography.displayLarge.copy(
+                                textAlign = TextAlign.Start,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 56.sp
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.tertiary),
+                            modifier = Modifier.width(IntrinsicSize.Min)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "MAD",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(100, 500, 1000, 5000).forEach { value ->
+                        Surface(
+                            onClick = {
+                                val current = amountText.toDoubleOrNull() ?: 0.0
+                                amountText = (current + value).toInt().toString()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = "+$value",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (amountError != null) {
+                Text(
+                    text = amountError ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            CategoryDropdown(
+                categories = categories,
+                selectedId = selectedCategoryId,
+                onSelected = { selectedCategoryId = it }
+            )
+
+            FrequencyDropdown(
+                selected = frequency,
+                onSelected = { frequency = it }
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showStartPicker = true },
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Lucide.Calendar,
+                            null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Start date • ${startDate.format(dateFormatter)}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showEndPicker = true },
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Lucide.CalendarClock,
+                            null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "End date • ${endDate?.format(dateFormatter) ?: "No end date"}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+                if (endDate != null) {
+                    TextButton(onClick = { endDate = null }) {
+                        Text("Clear end date", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            if (dateError != null) {
+                Text(
+                    text = dateError ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            PrimaryButton(
+                text = "Save Recurring Bill",
                 onClick = {
                     nameError = null
                     amountError = null
@@ -375,31 +536,62 @@ private fun AddRecurringDialog(
                     if (nameText.isBlank()) nameError = "Enter a name"
                     val amountMinor = parseAmountToMinor(amountText)
                     if (amountMinor == null || amountMinor <= 0) amountError = "Enter a valid amount"
-                    if (startDateText.isBlank()) dateError = "Enter a start date"
-                    
+                    if (endDate != null && endDate!!.isBefore(startDate)) {
+                        dateError = "End date must be after start date"
+                    }
+
                     if (nameError == null && amountError == null && dateError == null && selectedCategoryId != null) {
                         onSave(
                             nameText.trim(),
                             amountMinor ?: 0L,
                             selectedCategoryId!!,
                             frequency,
-                            startDateText.trim(),
-                            endDateText.trim().ifBlank { null }
+                            startDate.toString(),
+                            endDate?.toString()
                         )
                     }
                 },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-            ) {
-                Text("Save", color = MaterialTheme.colorScheme.background)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-    )
+    }
+
+    if (showStartPicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showStartPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        startDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                    }
+                    showStartPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = datePickerState) }
+    }
+
+    if (showEndPicker) {
+        val baseDate = endDate ?: startDate
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = baseDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showEndPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        endDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                    }
+                    showEndPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancel") } }
+        ) { DatePicker(state = datePickerState) }
+    }
 }
 
 @Composable

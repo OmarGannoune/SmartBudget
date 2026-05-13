@@ -29,6 +29,7 @@ import com.omargannoune.smartbudget.R
 import com.omargannoune.smartbudget.data.local.entity.ExpenseEntity
 import com.omargannoune.smartbudget.data.local.entity.CategoryEntity
 import com.omargannoune.smartbudget.data.local.entity.SavingsGoalEntity
+import com.omargannoune.smartbudget.ui.components.AppTextButton
 import com.omargannoune.smartbudget.ui.components.PrimaryButton
 import com.omargannoune.smartbudget.ui.components.SectionTitle
 import com.omargannoune.smartbudget.ui.components.formatAmount
@@ -41,6 +42,7 @@ fun HomeScreen(
     uiState: HomeViewModel.HomeUiState,
     modifier: Modifier = Modifier,
     onAddExpense: () -> Unit,
+    onOpenRecurring: () -> Unit,
     onSeeMoreExpenses: () -> Unit,
     onSeeAllGoals: () -> Unit,
     onEditExpense: (ExpenseEntity) -> Unit = {},
@@ -89,11 +91,21 @@ fun HomeScreen(
             currency = uiState.currency
         )
         Spacer(modifier = Modifier.height(16.dp))
-        PrimaryButton(
-            text = "Add expense",
-            onClick = onAddExpense,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            PrimaryButton(
+                text = "Add expense",
+                onClick = onAddExpense,
+                modifier = Modifier.weight(1f)
+            )
+            AppTextButton(
+                text = "Recurring bills",
+                onClick = onOpenRecurring,
+                modifier = Modifier.weight(1f)
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
