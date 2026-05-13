@@ -8,9 +8,9 @@
 
 ## 💡 The Idea: Why SmartBudget?
 
-After exploring numerous budget management apps available in app stores, I discovered a common frustration: **most apps either require bank account linking, overwhelming complexity, or prioritize data collection over user privacy**. 
+What started as an academic mini-project for my Mobile Development module quickly evolved into a personal mission. After exploring numerous budget management apps available in app stores, I discovered a common frustration: **most apps either require bank account linking, overwhelming complexity, or prioritize data collection over user privacy**. 
 
-The core realization? Users don't need fancy financial integrations—they need **simplicity, control, and motivation**.
+The core realization? Users don't need fancy financial integrations—they need **simplicity, control, and motivation**. I decided to transcend the basic academic requirements and engineer a truly production-ready application that could be used on a daily basis as a personal utility tool.
 
 SmartBudget was born from this insight:
 - ✅ **No bank linking required** — manually log your expenses in seconds
@@ -35,7 +35,7 @@ The key differentiator is **shifting focus from constraint-based budgeting to go
 - Fast, intuitive expense logging with:
   - Amount, currency, and category selection
   - Optional notes and payment method tracking
-  - Necessity rating (helps identify non-essential spending)
+  - **Necessity Rating (1-5 scale)**: Encourages mindful spending by explicitly identifying non-essential purchases before finalizing the transaction.
   - Automatic date assignment (customizable)
 - Organized by date and category for easy searching
 - Support for manual entry—no account linking required
@@ -250,7 +250,7 @@ All screens use:
 
 ## 🔄 Future Enhancements
 
-- � Advanced analytics and reporting
+- 📊 Advanced analytics and reporting
 - 📅 Budget forecasting
 - 💬 Expense notes with search
 - 🏷️ Tags for expenses
@@ -261,7 +261,14 @@ All screens use:
 
 ---
 
-## 👨‍💻 Development
+## 👨‍💻 Engineering Effort & Development
+
+### Overcoming Technical Challenges
+To achieve a professional standard, this project utilizes the latest industry-standard tools:
+- **Declarative UI Paradigm:** Built entirely with **Jetpack Compose**, bypassing traditional XML layouts for dynamic, custom-animated components (like interactive Bottom Sheets and Native Date Pickers).
+- **Reactive State Management:** **Kotlin Coroutines** and **StateFlow** entirely decouple the UI from the database, ensuring real-time UI updates without app crashes, even during heavy SQL aggregate queries.
+- **Clean Architecture Strictness:** The codebase is meticulously separated into layers (Entities, DAOs, Repositories, ViewModels, and UI Composables) for an infinitely scalable and highly maintainable codebase.
+- **Data Precision:** All financial amounts are locally stored in the Room database as integers representing minor units (e.g., cents) to fundamentally prevent floating-point precision loss.
 
 ### Key Design Principles
 
