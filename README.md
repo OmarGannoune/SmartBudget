@@ -60,18 +60,21 @@ The key differentiator is **shifting focus from constraint-based budgeting to go
 ### 5. **Recurring Expenses**
 - Automate tracking of regular expenses (rent, subscriptions, etc.)
 - Set frequency (daily, weekly, monthly, etc.)
+- Material 3 modals providing robust start and end native date pickers
 - Automatic generation of recurring expense instances
 - Optional end dates for temporary recurring expenses
 - Easy management of active recurring rules
 
 ### 6. **Categories & Customization**
 - Pre-defined default categories (Food, Transport, Entertainment, Utilities, Shopping, Healthcare, Other)
+- Custom category creation with personalized colors and icons
 - Organize expenses logically
-- Active category management
+- Active category management (create, rename, archive, delete)
 
 ### 7. **User Profile & Settings**
 - Personalized user information (name, currency preference)
 - Multi-currency support (set your preferred currency)
+- Data portability: Export and Import your data securely via CSV
 - Onboarding flow for first-time users
 - Settings screen for easy preference management
 
@@ -104,7 +107,8 @@ SmartBudget follows **clean architecture principles** with a clear separation of
 - **Jetpack Compose UI**: Modern, declarative UI framework
 - **MVVM Architecture**: ViewModels manage UI state independently
 - **StateFlow**: Reactive, observable state management
-- **Bottom Tab Navigation**: Easy access to Home, Expenses, Budgets, Goals, Recurring, Settings
+- **Bottom Tab Navigation**: Easy access to Home, Budgets, Quick Add, Goals, and Settings
+- **Contextual Actions**: Access features like Recurring Expenses and complete Expense Lists intuitively from the Home dashboard
 
 ### **Key Components**
 - `AppContainer` — Dependency injection container
@@ -246,9 +250,7 @@ All screens use:
 
 ## 🔄 Future Enhancements
 
-- 📤 Export/Import data (CSV, JSON)
-- 📊 Advanced analytics and reporting
-- 🎨 Custom category colors and icons
+- � Advanced analytics and reporting
 - 📅 Budget forecasting
 - 💬 Expense notes with search
 - 🏷️ Tags for expenses
